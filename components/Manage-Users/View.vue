@@ -33,7 +33,7 @@
         class="status-chip"
         @click="$emit('toggle-status', item)"
       >
-        {{ item.active ? 'ເປີດໃຊ້ງານ' : 'ປິດ' }}
+        {{ item.active ? 'Active' : 'Inactive' }}
       </v-chip>
     </template>
 

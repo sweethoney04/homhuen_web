@@ -18,7 +18,7 @@
         <v-spacer />
 
         <v-col cols="auto">
-          <v-btn color="primary" @click="openCreate">+ ເພີ່ມ</v-btn>
+          <ManageUsersCreate @created="addUser" />
         </v-col>
       </v-row>
 
@@ -26,6 +26,7 @@
         :headers="headers"
         :items="users"
         :search="search"
+        :loading="loading"
         class="user-table"
       >
         <template v-slot:item.no="{ item }">
@@ -39,7 +40,7 @@
             small
             label
           >
-            {{ item.status ? 'ເປີດ' : 'ປິດ' }}
+            {{ item.status ? 'Active' : 'Inactive' }}
           </v-chip>
         </template>
 
@@ -61,80 +62,23 @@
           </v-alert>
         </template>
       </v-data-table>
+
+      <v-alert v-if="errorMessage" type="error" dense text class="mt-3">
+        {{ errorMessage }}
+      </v-alert>
     </v-card>
 
-    <v-dialog v-model="dialog" max-width="500px">
-      <v-card>
-        <v-card-title class="text-h6">
-          {{ formTitle }}
-        </v-card-title>
+    <ManageUsersUpdate
+      v-model="dialog"
+      :item="editedItem"
+      @updated="updateUser"
+    />
 
-        <v-card-text>
-          <v-container>
-            <v-row>
-              <v-col cols="12">
-                <v-text-field
-                  v-model="editedItem.fullName"
-                  label="ຊື່-ນາມສະກຸນ"
-                />
-              </v-col>
-
-              <v-col cols="12">
-                <v-text-field
-                  v-model="editedItem.position"
-                  label="ຕໍາແໜ່ງ"
-                />
-              </v-col>
-
-              <v-col cols="12">
-                <v-text-field
-                  v-model="editedItem.phone"
-                  label="ເບີໂທ"
-                />
-              </v-col>
-
-              <v-col cols="12">
-                <v-text-field
-                  v-model="editedItem.email"
-                  label="Email"
-                />
-              </v-col>
-
-              <v-col cols="12">
-                <v-switch
-                  v-model="editedItem.status"
-                  inset
-                  color="success"
-                  hide-details
-                  :label="editedItem.status ? 'ເປີດ' : 'ປິດ'"
-                />
-              </v-col>
-            </v-row>
-          </v-container>
-        </v-card-text>
-
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text @click="close">Cancel</v-btn>
-          <v-btn color="primary" text @click="save">Save</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <v-dialog v-model="dialogDelete" max-width="420px">
-      <v-card>
-        <v-card-title class="text-h6">
-          ທ່ານແນ່ໃຈບໍ່ວ່າຈະລົບຂໍ້ມູນນີ້?
-        </v-card-title>
-
-        <v-card-actions>
-          <v-spacer />
-          <v-btn text @click="closeDelete">Cancel</v-btn>
-          <v-btn color="error" text @click="deleteItemConfirm">OK</v-btn>
-          <v-spacer />
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <ManageUsersDelete
+      v-model="dialogDelete"
+      :item="editedItem"
+      @deleted="removeUser"
+    />
   </div>
 </template>
 
@@ -145,6 +89,8 @@ export default {
     dialog: false,
     dialogDelete: false,
     editedIndex: -1,
+    loading: false,
+    errorMessage: '',
     editedItem: {
       fullName: '',
       position: '',
@@ -183,36 +129,37 @@ export default {
   },
 
   methods: {
-    initialize() {
-      this.users = [
-        {
-          fullName: 'ນາງ ວິນດາ',
-          position: 'Admin',
-          phone: '020 111 2222',
-          email: 'admin@homhuen.com',
-          status: true,
-        },
-        {
-          fullName: 'ທ່ານ ຄຳສົມ',
-          position: 'Manager',
-          phone: '020 333 4444',
-          email: 'manager@homhuen.com',
-          status: true,
-        },
-        {
-          fullName: 'ນາງ ໄຊຍາວ',
-          position: 'Staff',
-          phone: '020 555 6666',
-          email: 'staff@homhuen.com',
-          status: false,
-        },
-      ]
+    async initialize() {
+      this.loading = true
+      this.errorMessage = ''
+
+      try {
+        const { data } = await this.$axios.get('/admin/users')
+        this.users = Array.isArray(data)
+          ? data
+          : data.data || data.users || []
+      } catch (error) {
+        this.errorMessage = 'ບໍ່ສາມາດໂຫລດຂໍ້ມູນພະນັກງານໄດ້'
+        console.error('GET /admin/users error:', error)
+      } finally {
+        this.loading = false
+      }
     },
 
     openCreate() {
       this.editedIndex = -1
       this.editedItem = { ...this.defaultItem }
       this.dialog = true
+    },
+
+    async addUser(user) {
+      try {
+        const { data } = await this.$axios.post('/admin/users', user)
+        this.users.push(data.data || data.user || data)
+      } catch (error) {
+        this.errorMessage = 'ບໍ່ສາມາດເພີ່ມພະນັກງານໄດ້'
+        console.error('POST /admin/users error:', error)
+      }
     },
 
     openEdit(item) {
@@ -227,16 +174,33 @@ export default {
       this.dialogDelete = true
     },
 
-    deleteItemConfirm() {
-      this.users.splice(this.editedIndex, 1)
+    async removeUser(user) {
+      const index = this.users.indexOf(user)
+      if (index === -1 || !user.id) return
+
+      try {
+        await this.$axios.delete(`/admin/users/${user.id}`)
+        this.users.splice(index, 1)
+      } catch (error) {
+        this.errorMessage = 'ບໍ່ສາມາດລົບພະນັກງານໄດ້'
+        console.error('DELETE /admin/users/:id error:', error)
+      }
       this.closeDelete()
     },
 
-    save() {
-      if (this.editedIndex > -1) {
-        Object.assign(this.users[this.editedIndex], this.editedItem)
-      } else {
-        this.users.push({ ...this.editedItem })
+    async updateUser(user) {
+      const index = this.editedIndex
+      if (index === -1 || !user.id) return
+
+      try {
+        const { data } = await this.$axios.put(
+          `/admin/users/${user.id}`,
+          user
+        )
+        this.users.splice(index, 1, data.data || data.user || data)
+      } catch (error) {
+        this.errorMessage = 'ບໍ່ສາມາດແກ້ໄຂພະນັກງານໄດ້'
+        console.error('PUT /admin/users/:id error:', error)
       }
       this.close()
     },

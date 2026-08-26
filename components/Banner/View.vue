@@ -71,12 +71,13 @@ export default {
   data: () => ({
     headers: [
       { text: 'ລຳດັບ', value: 'no', sortable: false, width: '70' },
-      { text: 'ຊື່', value: 'name', sortable: false },
-      { text: 'ເບີໂທ', value: 'phoneNumber', sortable: false },
-      { text: 'ຕຳແໜ່ງ', value: 'position', sortable: false },
-      { text: 'ສະຖານະ', value: 'active', sortable: false },
+      { text: 'ຮູບ', value: 'image', sortable: false, width: '120' },
+      { text: 'ຫົວຂໍ້', value: 'topic', sortable: false },
+      { text: 'ລິ້ງ', value: 'link', sortable: false },
+      { text: 'ລຳດັບ', value: 'order', sortable: false, width: '90' },
+      { text: 'ສະຖານະ', value: 'active', sortable: false, align: 'center' },
       { text: 'ແກ້ໄຂ', value: 'edit', sortable: false, align: 'center' },
-      { text: 'ລິບ', value: 'delete', sortable: false, align: 'center' },
+      { text: 'ລົບ', value: 'delete', sortable: false, align: 'center' },
     ],
   }),
 }

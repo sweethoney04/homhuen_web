@@ -1,65 +1,146 @@
 <template>
   <v-dialog v-model="show" max-width="500px">
     <template v-slot:activator="{ on, attrs }">
-      <v-btn color="primary" dark v-bind="attrs" v-on="on">
+      <v-btn color="#064D8D" dark v-bind="attrs" v-on="on">
         ເພີ່ມ ພະນັກງານ
       </v-btn>
     </template>
 
-    <v-card>
-      <v-card-title>
-        <span class="text-h6">ເພີ່ມ Banner</span>
+    <v-card class="rounded-lg overflow-hidden pb-4">
+      <!-- Header Bar -->
+      <v-card-title
+        class="white--text d-flex justify-space-between align-center px-6 py-3"
+        style="background-color: #064d8d"
+      >
+        <span class="text-subtitle-1 font-weight-medium">ລາຍລະອຽດພະນັກງານ</span>
+        <v-btn icon dark small @click="close">
+          <v-icon size="18">mdi-close</v-icon>
+        </v-btn>
       </v-card-title>
 
-      <v-card-text>
-        <v-container>
-          <v-row>
-            <v-col cols="12">
-              <v-file-input
-                v-model="form.imageFile"
-                label="ຮູບ Banner"
-                prepend-icon="mdi-image"
-                accept="image/*"
-                show-size
-                @change="onImageChange"
-              ></v-file-input>
-              <v-img
-                v-if="form.image"
-                :src="form.image"
-                max-height="140"
-                contain
-                class="mb-2 grey lighten-3"
-              ></v-img>
-            </v-col>
+      <!-- Form Content -->
+      <v-card-text class="pt-4 px-6">
+        <div class="text-subtitle-2 font-weight-bold mb-2 primary-text">ຂໍ້ມູນພະນັກງານ</div>
 
+        <v-container class="pa-0">
+          <v-row dense>
+            <!-- 1. Full Name (Full Width) -->
             <v-col cols="12">
-              <v-text-field v-model="form.topic" label="Topic"></v-text-field>
-            </v-col>
-
-            <v-col cols="12">
-              <v-text-field v-model="form.link" label="Link"></v-text-field>
-            </v-col>
-
-            <v-col cols="12" sm="6">
+              <div class="field-label">ຊື່ ແລະ ນາມສະກຸນ</div>
               <v-text-field
-                v-model.number="form.order"
-                type="number"
-                label="ລຳດັບສະແດງ"
+                v-model="form.EmployeeName"
+                dense
+                outlined
+                hide-details
+                placeholder="ຊື່ ແລະ ນາມສະກຸນ"
+                prepend-inner-icon="mdi-account-outline"
+                class="custom-input"
               ></v-text-field>
             </v-col>
 
-            <v-col cols="12" sm="6" class="d-flex align-center">
-              <span class="mr-3">ສະຖານະ</span>
-              <v-switch v-model="form.active" color="success" hide-details inset></v-switch>
+            <!-- 2. Phone & Contact Channel -->
+            <v-col cols="12" sm="6" class="mt-2 pr-sm-2">
+              <div class="field-label">ເພດ</div>
+              <v-text-field
+                v-model="form.gender"
+                dense
+                outlined
+                hide-details
+                type="gender"
+                placeholder="ເພດ"
+                class="custom-input"
+              ></v-text-field>
+            </v-col>
+
+            <v-col cols="12" sm="6" class="mt-2 pl-sm-2">
+              <div class="field-label">ວັນເດືອນປີເກີດ</div>
+              <v-text-field
+                v-model="form.dateOfBirth"
+                dense
+                outlined
+                hide-details
+                type="date"
+                placeholder="DD/MM/YYYY"
+                class="custom-input"
+              ></v-text-field>
+            </v-col>
+
+            <!-- 3. Interested Room (Full Width) -->
+            <v-col cols="12" class="mt-2">
+              <div class="field-label">ເບີໂທລະສັບ</div>
+              <v-text-field
+                v-model="form.phoneNumber"
+                dense
+                outlined
+                hide-details
+                type="tel"
+                placeholder="ເບີໂທລະສັບ"
+                class="custom-input"
+              ></v-text-field>
+            </v-col>
+
+            <v-col cols="12" class="mt-2">
+              <div class="field-label">ເລກປະຈຳຕົວ / Passport</div>
+              <v-text-field
+                v-model="form.idNumber"
+                dense
+                outlined
+                hide-details
+                type="text"
+                placeholder="ເລກປະຈຳຕົວ / Passport"
+                class="custom-input"
+              ></v-text-field>
+            </v-col>
+             <v-col cols="12" class="mt-2">
+              <div class="field-label">Email</div>
+              <v-text-field
+                v-model="form.email"
+                dense
+                outlined
+                hide-details
+                type="email"
+                placeholder="Email"
+                class="custom-input"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="12" class="mt-2">
+              <div class="field-label">ຕຳແໜ່ງ</div>
+              <v-text-field
+                v-model="form.position"
+                dense
+                outlined
+                hide-details
+                type="text"
+                placeholder="ຕຳແໜ່ງ"
+                class="custom-input"
+              ></v-text-field>
+            </v-col>
+
+            <v-col cols="12" class="mt-2">
+              <v-switch
+                v-model="form.status"
+                inset
+                color="success"
+                hide-details
+                :label="form.status ? 'Active' : 'Inactive'"
+              ></v-switch>
             </v-col>
           </v-row>
         </v-container>
       </v-card-text>
 
-      <v-card-actions>
-        <v-spacer></v-spacer>
-        <v-btn text @click="close">Cancel</v-btn>
-        <v-btn color="primary" text @click="save">Save</v-btn>
+      <!-- Main Action Footer -->
+      <v-card-actions class="px-6 pt-3 pb-2 justify-end">
+        <v-btn
+          color="#064D8D"
+          dark
+          depressed
+          min-width="120"
+          class="rounded-lg text-none font-weight-medium px-6"
+          @click="save"
+        >
+          ບັນທຶກ
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -72,22 +153,30 @@ export default {
     return {
       show: false,
       form: this.emptyForm(),
+      channelOptions: ['Website', 'Facebook', 'WhatsApp', 'Call', 'Walk-in'],
+      newContactNote: '',
     }
   },
   methods: {
     emptyForm() {
       return {
-        topic: '',
-        link: '',
-        order: 1,
-        active: true,
-        image: '',
-        imageFile: null,
+        EmployeeName: '',
+        gender: '',
+        dateOfBirth: '',
+        phoneNumber: '',
+        idNumber: '',
+        email: '',
+        position: '',
+        status: true,
       }
     },
-    onImageChange(file) {
-      if (file) {
-        this.form.image = URL.createObjectURL(file)
+    addContactNote() {
+      if (this.newContactNote.trim()) {
+        this.form.contactLogs.push({
+          date: new Date().toLocaleDateString('lo-LA'),
+          note: this.newContactNote.trim(),
+        })
+        this.newContactNote = ''
       }
     },
     close() {
@@ -97,8 +186,11 @@ export default {
       })
     },
     save() {
-      // TODO: ຮ້ອງ API ສ້າງ Banner ໃໝ່ ຕົວຢ່າງ:
-      // const { data } = await this.$axios.post('/banners', this.form)
+      if (!this.form.EmployeeName.trim()) {
+        alert('ກະລຸນາປ້ອນຊື່-ນາມສະກຸນ')
+        return
+      }
+
       this.$emit('created', { ...this.form })
       this.close()
     },

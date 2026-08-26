@@ -3,6 +3,7 @@
     :headers="headers"
     :items="customers"
     :search="search"
+    :loading="loading"
     class="customer-table"
   >
     <template v-slot:item.no="{ item }">
@@ -50,15 +51,20 @@ export default {
       type: String,
       default: '',
     },
+    loading: {
+      type: Boolean,
+      default: false,
+    },
   },
   data: () => ({
     headers: [
       { text: 'ລຳດັບ', value: 'no', sortable: false, width: '70' },
       { text: 'ຊື່ລູກຄ້າ', value: 'customerName' },
-      { text: 'ຫ້ອງທີ່ສົນໃຈ', value: 'interestedRoom' },
       { text: 'ເບີໂທ', value: 'phoneNumber', sortable: false },
-      { text: 'ລາຍລະອຽດ', value: 'detail', sortable: false },
-      { text: 'ວັນທີ່ຕິດຕໍ່', value: 'contactDate' },
+      { text: 'ຫ້ອງທີ່ສົນໃຈ', value: 'roomInterested' },
+      { text: 'ຊ່ອງທາງທີ່ຕິດຕໍ່ເຂົ້າມາ', value: 'channel', sortable: false },
+      { text: 'ທີ່ຕິດຕໍ່ຄັ້ງທຳອິດ', value: 'firstContactDate' },
+      { text: 'ນັດໝາຍຄັ້ງຕໍ່ໄປ', value: 'nextAppointmentDate' },
       { text: 'ຜູ້ຮັບຜິດຊອບ', value: 'responsible' },
       { text: 'ສະຖານະ', value: 'status' },
       { text: 'ແກ້ໄຂ', value: 'edit', sortable: false, align: 'center' },

@@ -2,7 +2,7 @@
   <v-dialog v-model="show" max-width="420px">
     <v-card>
       <v-card-title class="text-h6">
-        ທ່ານແນ່ໃຈບໍ່ວ່າຈະລົບ Banner ນີ້?
+        ທ່ານແນ່ໃຈບໍ່ວ່າຈະລົບ ຊື່ພະນັກງານນີ້
       </v-card-title>
       <v-card-actions>
         <v-spacer></v-spacer>
@@ -42,8 +42,6 @@ export default {
       this.show = false
     },
     confirm() {
-      // TODO: ຮ້ອງ API ລົບ Banner ຕົວຢ່າງ:
-      // await this.$axios.delete(`/banners/${this.item.id}`)
       this.$emit('deleted', this.item)
       this.close()
     },

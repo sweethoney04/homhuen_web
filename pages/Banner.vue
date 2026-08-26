@@ -18,107 +18,88 @@
         <v-spacer />
 
         <v-col cols="auto">
-          <v-btn color="primary" @click="openCreate">+ ເພີ່ມ</v-btn>
+          <BannerCreate @created="onBannerCreated" />
         </v-col>
       </v-row>
 
-      <v-data-table
-        :headers="headers"
-        :items="banners"
+      <BannerView
+        :banners="banners"
         :search="search"
-        class="banner-table"
-      >
-        <template v-slot:item.no="{ item }">
-          {{ banners.indexOf(item) + 1 }}
-        </template>
-
-        <template v-slot:item.image="{ item }">
-          <v-img
-            v-if="item.image"
-            :src="item.image"
-            max-width="80"
-            max-height="50"
-            contain
-            class="my-1"
-          />
-          <span v-else class="text-caption grey--text">No image</span>
-        </template>
-
-        <template v-slot:item.active="{ item }">
-          <v-switch
-            v-model="item.active"
-            inset
-            color="success"
-            dense
-            hide-details
-            @change="toggleStatus(item)"
-          />
-        </template>
-
-        <template v-slot:item.edit="{ item }">
-          <v-btn icon small color="primary" @click="openEdit(item)">
-            <v-icon small>mdi-pencil</v-icon>
-          </v-btn>
-        </template>
-
-        <template v-slot:item.delete="{ item }">
-          <v-btn icon small color="error" @click="openDelete(item)">
-            <v-icon small>mdi-delete</v-icon>
-          </v-btn>
-        </template>
-
-        <template v-slot:no-data>
-          <v-alert type="info" text>
-            ບໍ່ມີຂໍ້ມູນ Banner
-          </v-alert>
-        </template>
-      </v-data-table>
+        @toggle-status="toggleStatus"
+        @edit-item="openEdit"
+        @delete-item="openDelete"
+      />
     </v-card>
 
+    <!-- Edit Dialog -->
     <v-dialog v-model="dialog" max-width="500px">
       <v-card>
         <v-card-title class="text-h6">
-          {{ formTitle }}
+          ແກ້ໄຂ Banner
         </v-card-title>
 
         <v-card-text>
           <v-container>
             <v-row>
               <v-col cols="12">
+                <div class="label-text">ຫົວຂໍ້</div>
                 <v-text-field
                   v-model="editedItem.topic"
-                  label="ຫົວຂໍ້"
+                  dense
+                  outlined
+                  hide-details
                 />
               </v-col>
 
               <v-col cols="12">
+                <div class="label-text">Link</div>
                 <v-text-field
                   v-model="editedItem.link"
-                  label="ລິ້ງ"
+                  dense
+                  outlined
+                  hide-details
                 />
               </v-col>
 
-              <v-col cols="12">
+              <v-col cols="12" sm="6">
+                <div class="label-text">ລຳດັບ</div>
                 <v-text-field
                   v-model.number="editedItem.order"
-                  label="ລຳດັບ"
+                  dense
+                  outlined
+                  hide-details
                   type="number"
                 />
               </v-col>
 
-              <v-col cols="12">
-                <v-text-field
-                  v-model="editedItem.image"
-                  label="URL ຮູບພາບ"
+              <v-col cols="12" sm="6">
+                <div class="label-text">ປະເພດ Banner</div>
+                <v-select
+                  v-model="editedItem.type"
+                  :items="[
+                    { text: 'ຂະໜາດນ້ອຍ (Small)', value: 0 },
+                    { text: 'ຂະໜາດໃຫຍ່ (Large)', value: 1 }
+                  ]"
+                  item-text="text"
+                  item-value="value"
+                  dense
+                  outlined
+                  hide-details
                 />
               </v-col>
 
-              <v-col cols="12" class="d-flex align-center">
-                <span class="mr-3">ສະຖານະ</span>
-                <v-switch
+              <v-col cols="12" sm="6">
+                <div class="label-text">ສະຖານະ</div>
+                <v-select
                   v-model="editedItem.active"
-                  inset
-                  color="success"
+                  :items="[
+                    { text: 'ເປີດ', value: true },
+                    { text: 'ປິດ', value: false }
+                  ]"
+                  item-text="text"
+                  item-value="value"
+                  dense
+                  outlined
                   hide-details
                 />
               </v-col>
@@ -129,11 +110,12 @@
         <v-card-actions>
           <v-spacer />
           <v-btn text @click="close">Cancel</v-btn>
-          <v-btn color="primary" text @click="save">Save</v-btn>
+          <v-btn color="primary" dark @click="save">Save</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
+    <!-- Delete Dialog -->
     <v-dialog v-model="dialogDelete" max-width="420px">
       <v-card>
         <v-card-title class="text-h6">
@@ -152,8 +134,15 @@
 </template>
 
 <script>
+import BannerCreate from '@/components/Banner/Create.vue'
+import BannerView from '@/components/Banner/View.vue'
+
 export default {
   name: 'BannerPage',
+  components: {
+    BannerCreate,
+    BannerView,
+  },
   data: () => ({
     search: '',
     dialog: false,
@@ -164,6 +153,7 @@ export default {
       topic: '',
       link: '',
       order: 1,
+      type: 0,
       active: true,
       image: '',
     },
@@ -172,27 +162,12 @@ export default {
       topic: '',
       link: '',
       order: 1,
+      type: 0,
       active: true,
       image: '',
     },
-    headers: [
-      { text: 'ລຳດັບ', value: 'no', sortable: false, width: '70' },
-      { text: 'ຮູບ', value: 'image', sortable: false, width: '120' },
-      { text: 'ຫົວຂໍ້', value: 'topic', sortable: false },
-      { text: 'ລິ້ງ', value: 'link', sortable: false },
-      { text: 'ລຳດັບ', value: 'order', sortable: false, width: '90' },
-      { text: 'ສະຖານະ', value: 'active', sortable: false, align: 'center' },
-      { text: 'ແກ້ໄຂ', value: 'edit', sortable: false, align: 'center' },
-      { text: 'ລົບ', value: 'delete', sortable: false, align: 'center' },
-    ],
     banners: [],
   }),
-
-  computed: {
-    formTitle() {
-      return this.editedIndex === -1 ? 'ເພີ່ມ Banner' : 'ແກ້ໄຂ Banner'
-    },
-  },
 
   created() {
     this.initialize()
@@ -206,6 +181,7 @@ export default {
           topic: 'Promotion 20%',
           link: 'https://www.google.com/',
           order: 1,
+          type: 0,
           active: true,
           image: '',
         },
@@ -214,6 +190,7 @@ export default {
           topic: 'Promotion 30%',
           link: 'https://www.facebook.com/',
           order: 2,
+          type: 1,
           active: true,
           image: '',
         },
@@ -222,16 +199,18 @@ export default {
           topic: 'New Offer',
           link: 'https://www.youtube.com/',
           order: 3,
+          type: 0,
           active: false,
           image: '',
         },
       ]
     },
 
-    openCreate() {
-      this.editedIndex = -1
-      this.editedItem = { ...this.defaultItem, id: Date.now() }
-      this.dialog = true
+    onBannerCreated(banner) {
+      this.banners.push({
+        ...banner,
+        id: banner.id || Date.now(),
+      })
     },
 
     openEdit(item) {
@@ -249,10 +228,7 @@ export default {
     save() {
       if (this.editedIndex > -1) {
         Object.assign(this.banners[this.editedIndex], this.editedItem)
-      } else {
-        this.banners.push({ ...this.editedItem })
       }
-
       this.close()
     },
 
@@ -285,6 +261,12 @@ export default {
 <style scoped>
 .page-title {
   font-weight: 600;
+}
+
+.label-text {
+  font-size: 13px;
+  color: #616161;
+  margin-bottom: 4px;
 }
 
 .banner-table >>> thead tr th {

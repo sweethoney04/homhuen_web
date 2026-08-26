@@ -1,72 +1,88 @@
 <template>
-  <v-dialog v-model="show" max-width="500px">
-    <v-card>
-      <v-card-title>
-        <span class="text-h6">ແກ້ໄຂຂໍ້ມູນລູກຄ້າ</span>
+  <v-dialog v-model="show" max-width="520px" persistent>
+    <v-card class="rounded-lg overflow-hidden pb-4">
+      <!-- Header Bar -->
+      <v-card-title
+        class="white--text d-flex justify-space-between align-center px-6 py-3"
+        style="background-color: #064d8d"
+      >
+        <span class="text-subtitle-1 font-weight-medium">ແກ້ໄຂຂໍ້ມູນລູກຄ້າ</span>
+        <v-btn icon dark small @click="close">
+          <v-icon size="18">mdi-close</v-icon>
+        </v-btn>
       </v-card-title>
 
-      <v-card-text>
-        <v-container>
-          <v-row>
-            <v-col cols="12" sm="6">
-              <v-text-field v-model="form.customerName" label="ຊື່ລູກຄ້າ"></v-text-field>
-            </v-col>
-
-            <v-col cols="12" sm="6">
-              <v-text-field v-model="form.interestedRoom" label="ຫ້ອງທີ່ສົນໃຈ"></v-text-field>
-            </v-col>
-
-            <v-col cols="12" sm="6">
-              <v-text-field v-model="form.phoneNumber" label="ເບີໂທ"></v-text-field>
-            </v-col>
-
-            <v-col cols="12" sm="6">
-              <v-menu
-                v-model="dateMenu"
-                :close-on-content-click="false"
-                transition="scale-transition"
-                offset-y
-                min-width="auto"
-              >
-                <template v-slot:activator="{ on: onDate, attrs: attrsDate }">
-                  <v-text-field
-                    v-model="form.contactDate"
-                    label="ວັນທີ່ຕິດຕໍ່"
-                    readonly
-                    v-bind="attrsDate"
-                    v-on="onDate"
-                  ></v-text-field>
-                </template>
-                <v-date-picker
-                  v-model="form.contactDate"
-                  @input="dateMenu = false"
-                ></v-date-picker>
-              </v-menu>
-            </v-col>
-
+      <!-- Form Content -->
+      <v-card-text class="pt-4 px-6">
+        <v-container class="pa-0">
+          <v-row dense>
             <v-col cols="12">
-              <v-text-field v-model="form.detail" label="ລາຍລະອຽດ"></v-text-field>
+              <div class="field-label">ຊື່ ແລະ ນາມສະກຸນ</div>
+              <v-text-field v-model="form.customerName" placeholder="ຊື່ ແລະ ນາມສະກຸນ" outlined dense hide-details></v-text-field>
             </v-col>
 
-            <v-col cols="12" sm="6">
-              <v-text-field v-model="form.responsible" label="ຜູ້ຮັບຜິດຊອບ"></v-text-field>
+            <v-col cols="12" sm="6" class="mt-2 pr-sm-2">
+              <div class="field-label">ເບີໂທລະສັບ</div>
+              <v-text-field v-model="form.phoneNumber" placeholder="ເບີໂທລະສັບ" outlined dense hide-details></v-text-field>
             </v-col>
 
-            <v-col cols="12" sm="6">
+            <v-col cols="12" sm="6" class="mt-2 pl-sm-2">
+              <div class="field-label">ຊ່ອງທາງທີ່ຕິດຕໍ່ເຂົ້າມາ</div>
+              <v-select
+                v-model="form.channel"
+                :items="channelOptions"
+                outlined
+                dense
+                hide-details
+              ></v-select>
+            </v-col>
+
+            <v-col cols="12" class="mt-2">
+              <div class="field-label">ຫ້ອງທີ່ສົນໃຈ</div>
+              <v-text-field v-model="form.roomInterested" placeholder="ຫ້ອງ A01" outlined dense hide-details></v-text-field>
+            </v-col>
+
+            <v-col cols="12" sm="6" class="mt-2 pr-sm-2">
+              <div class="field-label">ຕິດຕໍ່ຄັ້ງທຳອິດ</div>
+              <v-text-field v-model="form.firstContactDate" type="date" outlined dense hide-details></v-text-field>
+            </v-col>
+
+            <v-col cols="12" sm="6" class="mt-2 pl-sm-2">
+              <div class="field-label">ນັດໝາຍຄັ້ງຕໍ່ໄປ</div>
+              <v-text-field v-model="form.nextAppointmentDate" type="date" outlined dense hide-details></v-text-field>
+            </v-col>
+
+            <v-col cols="12" sm="6" class="mt-2 pr-sm-2">
+              <div class="field-label">ຜູ້ຮັບຜິດຊອບ</div>
+              <v-text-field v-model="form.responsible" placeholder="ຜູ້ຮັບຜິດຊອບ" outlined dense hide-details></v-text-field>
+            </v-col>
+
+            <v-col cols="12" sm="6" class="mt-2 pl-sm-2">
+              <div class="field-label">ສະຖານະປັດຈຸບັນ</div>
               <v-select
                 v-model="form.status"
                 :items="statusOptions"
-                label="ສະຖານະ"
+                outlined
+                dense
+                hide-details
               ></v-select>
             </v-col>
           </v-row>
         </v-container>
       </v-card-text>
 
-      <v-card-actions>
-        <v-spacer></v-spacer>
-        <v-btn text @click="close">Cancel</v-btn>
-        <v-btn color="primary" text @click="save">Save</v-btn>
+      <!-- Main Action Footer -->
+      <v-card-actions class="px-6 pt-3 pb-2 justify-end">
+        <v-btn
+          color="#064D8D"
+          dark
+          depressed
+          min-width="120"
+          class="rounded-lg text-none font-weight-medium px-6"
+          @click="save"
+        >
+          ບັນທຶກ
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -87,9 +103,9 @@ export default {
   },
   data() {
     return {
-      dateMenu: false,
-      statusOptions: ['ໃໝ່', 'ກຳລັງຕິດຕໍ່', 'ປິດການຂາຍແລ້ວ'],
-      form: { ...this.item },
+      channelOptions: ['Website', 'Facebook', 'WhatsApp', 'Call', 'Walk-in'],
+      statusOptions: ['ກຳລັງຕິດຕໍ່', 'ໃໝ່', 'ປິດການຂາຍແລ້ວ'],
+      form: this.emptyForm(),
     }
   },
   computed: {
@@ -104,19 +120,51 @@ export default {
   },
   watch: {
     item(val) {
-      this.form = { ...val }
+      this.form = { ...this.emptyForm(), ...val }
     },
   },
   methods: {
+    emptyForm() {
+      return {
+        customerName: '',
+        phoneNumber: '',
+        channel: 'Website',
+        roomInterested: '',
+        contactLogs: [],
+        firstContactDate: '',
+        nextAppointmentDate: '',
+        responsible: '',
+        status: 'ກຳລັງຕິດຕໍ່',
+      }
+    },
     close() {
       this.show = false
     },
     save() {
-      // TODO: ຮ້ອງ API ອັບເດດຂໍ້ມູນລູກຄ້າ ຕົວຢ່າງ:
-      // await this.$axios.put(`/customers/${this.form.id}`, this.form)
+      if (!this.form.customerName || !this.form.customerName.trim()) {
+        alert('ກະລຸນາປ້ອນຊື່ລູກຄ້າ')
+        return
+      }
+
       this.$emit('updated', { ...this.form })
       this.close()
     },
   },
 }
 </script>
+
+<style scoped>
+.field-label {
+  font-size: 12px;
+  color: #555;
+  margin-bottom: 4px;
+}
+</style>
+
+<style scoped>
+.field-label {
+  font-size: 12px;
+  color: #555;
+  margin-bottom: 4px;
+}
+</style>

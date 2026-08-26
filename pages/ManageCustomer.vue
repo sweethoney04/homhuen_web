@@ -23,10 +23,15 @@
       <CustomerView
         :customers="customers"
         :search="search"
+        :loading="loading"
         @edit-item="openEdit"
         @delete-item="openDelete"
         @reset="initialize"
       />
+
+      <v-alert v-if="errorMessage" type="error" dense text class="mt-3">
+        {{ errorMessage }}
+      </v-alert>
     </v-card>
 
     <CustomerUpdate
@@ -60,6 +65,8 @@ export default {
   data: () => ({
     search: '',
     customers: [],
+    loading: false,
+    errorMessage: '',
     dialogUpdate: false,
     dialogDelete: false,
     editedItem: {},
@@ -68,17 +75,21 @@ export default {
     this.initialize()
   },
   methods: {
-    initialize() {
-      // TODO: ປ່ຽນເປັນການດຶງຂໍ້ມູນຈິງຈາກ API, ຕົວຢ່າງ:
-      // const { data } = await this.$axios.get('/customers')
-      // this.customers = data
-      this.customers = [
-        { id: 1, customerName: 'ນາງ ລັດດາວັນ', interestedRoom: 'ຫ້ອງ A01', phoneNumber: '020xxxxxxx', detail: 'ຖາມລາຄາ', contactDate: '12/12/2026', responsible: 'ພອນຄຳ', status: 'ກຳລັງຕິດຕໍ່' },
-        { id: 2, customerName: 'ນາງ ເອມີລີ່', interestedRoom: 'ຫ້ອງ A02', phoneNumber: '020xxxxxxx', detail: 'ຢາກຮູ້ລາຄາຜ່ອນ', contactDate: '12/12/2026', responsible: 'ແກ້ວ', status: 'ໃໝ່' },
-        { id: 3, customerName: 'ນາງ ເຈມນີ່', interestedRoom: 'ຫ້ອງ A03', phoneNumber: '020xxxxxxx', detail: 'ຜ່ອນຈົນຈົບ', contactDate: '12/12/2026', responsible: 'ຕົ້ນທອງ', status: 'ປິດການຂາຍແລ້ວ' },
-        { id: 4, customerName: 'ນາງ ສອນມະນີ', interestedRoom: 'ຫ້ອງ A04', phoneNumber: '020xxxxxxx', detail: 'ຈ່າຍຄົບ', contactDate: '12/12/2026', responsible: 'ແກ້ວ', status: 'ກຳລັງຕິດຕໍ່' },
-        { id: 5, customerName: 'ນາງ ເພັດ', interestedRoom: 'ຫ້ອງ A05', phoneNumber: '020xxxxxxx', detail: 'ຈ່າຍງວດໄດ້', contactDate: '12/12/2026', responsible: 'ພອນຄຳ', status: 'ໃໝ່' },
-      ]
+    async initialize() {
+      this.loading = true
+      this.errorMessage = ''
+
+      try {
+        const { data } = await this.$axios.get('/customers')
+        this.customers = Array.isArray(data)
+          ? data
+          : data.data || data.customers || []
+      } catch (error) {
+        this.errorMessage = 'ບໍ່ສາມາດໂຫລດຂໍ້ມູນລູກຄ້າໄດ້'
+        console.error('GET /customers error:', error)
+      } finally {
+        this.loading = false
+      }
     },
 
     addCustomer(item) {
@@ -90,10 +101,17 @@ export default {
       this.dialogUpdate = true
     },
 
-    updateCustomer(item) {
+    async updateCustomer(item) {
       const index = this.customers.findIndex((c) => c.id === item.id)
-      if (index > -1) {
-        this.customers.splice(index, 1, item)
+      if (index === -1 || !item.id) return
+
+      try {
+        const { data } = await this.$axios.put(`/customers/${item.id}`, item)
+        const updatedCustomer = data.data || data.customer || data
+        this.customers.splice(index, 1, updatedCustomer)
+      } catch (error) {
+        this.errorMessage = 'ບໍ່ສາມາດແກ້ໄຂຂໍ້ມູນລູກຄ້າໄດ້'
+        console.error('PUT /customers/:id error:', error)
       }
     },
 
@@ -102,10 +120,16 @@ export default {
       this.dialogDelete = true
     },
 
-    removeCustomer(item) {
+    async removeCustomer(item) {
       const index = this.customers.findIndex((c) => c.id === item.id)
-      if (index > -1) {
+      if (index === -1 || !item.id) return
+
+      try {
+        await this.$axios.delete(`/customers/${item.id}`)
         this.customers.splice(index, 1)
+      } catch (error) {
+        this.errorMessage = 'ບໍ່ສາມາດລົບຂໍ້ມູນລູກຄ້າໄດ້'
+        console.error('DELETE /customers/:id error:', error)
       }
     },
   },

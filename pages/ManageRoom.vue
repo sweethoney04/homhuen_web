@@ -22,9 +22,14 @@
         </v-col>
       </v-row>
 
+      <v-alert v-if="errorMessage" type="error" dense text class="mb-2">
+        {{ errorMessage }}
+      </v-alert>
+
       <ManageRoomView
         :rooms="rooms"
         :search="search"
+        :loading="loading"
         @edit-item="openEdit"
         @delete-item="openDelete"
         @toggle-status="toggleStatus"
@@ -67,6 +72,8 @@ export default {
     dialogUpdate: false,
     dialogDelete: false,
     editedItem: {},
+    loading: false,
+    errorMessage: '',
   }),
 
   created() {
@@ -74,47 +81,25 @@ export default {
   },
 
   methods: {
-    initialize() {
-      // Replace with real API later
-      // const { data } = await this.$axios.get('/rooms')
-      // this.rooms = data
-
-      this.rooms = [
-        {
-          id: 1,
-          roomName: 'Room A101',
-          type: 'Deluxe',
-          price: 250000,
-          capacity: 2,
-          active: true,
-          image: '',
-        },
-        {
-          id: 2,
-          roomName: 'Room A102',
-          type: 'Standard',
-          price: 180000,
-          capacity: 2,
-          active: true,
-          image: '',
-        },
-        {
-          id: 3,
-          roomName: 'Room B205',
-          type: 'Family',
-          price: 350000,
-          capacity: 4,
-          active: false,
-          image: '',
-        },
-      ]
+    // GET All Rooms (Admin)
+    async initialize() {
+      this.loading = true
+      this.errorMessage = ''
+      try {
+        const { data } = await this.$axios.get('/admin/rooms')
+        // ປັບຕາມໂຄງສ້າງ response ຈິງ ເຊັ່ນ data.data ຫຼື data.rooms
+        this.rooms = data.data || data.rooms || data
+      } catch (err) {
+        this.errorMessage = 'ບໍ່ສາມາດໂຫລດຂໍ້ມູນຫ້ອງໄດ້'
+        console.error('GET /admin/rooms error:', err)
+      } finally {
+        this.loading = false
+      }
     },
 
-    addRoom(item) {
-      this.rooms.push({
-        id: Date.now(),
-        ...item,
-      })
+    // Refresh the list after the create dialog saves a room.
+    async addRoom() {
+      await this.initialize()
     },
 
     openEdit(item) {
@@ -122,10 +107,17 @@ export default {
       this.dialogUpdate = true
     },
 
-    updateRoom(item) {
-      const index = this.rooms.findIndex((room) => room.id === item.id)
-      if (index > -1) {
-        this.rooms.splice(index, 1, item)
+    // PUT Edit Room
+    async updateRoom(item) {
+      try {
+        const { data } = await this.$axios.put(`/admin/rooms/${item.id}`, item)
+        const updated = data.data || data.room || data
+        const index = this.rooms.findIndex((room) => room.id === item.id)
+        if (index > -1) this.rooms.splice(index, 1, updated)
+        else await this.initialize()
+      } catch (err) {
+        this.errorMessage = 'ບໍ່ສາມາດແກ້ໄຂຫ້ອງໄດ້'
+        console.error('PUT /admin/rooms/:id error:', err)
       }
     },
 
@@ -134,17 +126,33 @@ export default {
       this.dialogDelete = true
     },
 
-    removeRoom(item) {
-      const index = this.rooms.findIndex((room) => room.id === item.id)
-      if (index > -1) {
-        this.rooms.splice(index, 1)
+    // DELETE Room
+    async removeRoom(item) {
+      try {
+        await this.$axios.delete(`/admin/rooms/${item.id}`)
+        const index = this.rooms.findIndex((room) => room.id === item.id)
+        if (index > -1) {
+          this.rooms.splice(index, 1)
+        }
+      } catch (err) {
+        this.errorMessage = 'ບໍ່ສາມາດລຶບຫ້ອງໄດ້'
+        console.error('DELETE /admin/rooms/:id error:', err)
       }
     },
 
-    toggleStatus(item) {
-      item.active = !item.active
-      // TODO: update API later
-      // await this.$axios.patch(`/rooms/${item.id}`, { active: item.active })
+    // PATCH/PUT toggle active status
+    async toggleStatus(item) {
+      const newStatus = !item.active
+      try {
+        await this.$axios.put(`/admin/rooms/${item.id}`, {
+          ...item,
+          active: newStatus,
+        })
+        item.active = newStatus
+      } catch (err) {
+        this.errorMessage = 'ບໍ່ສາມາດປ່ຽນສະຖານະໄດ້'
+        console.error('toggleStatus error:', err)
+      }
     },
   },
 }

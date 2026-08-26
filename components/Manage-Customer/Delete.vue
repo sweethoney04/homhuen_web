@@ -42,8 +42,6 @@ export default {
       this.show = false
     },
     confirm() {
-      // TODO: ຮ້ອງ API ລົບຂໍ້ມູນລູກຄ້າ ຕົວຢ່າງ:
-      // await this.$axios.delete(`/customers/${this.item.id}`)
       this.$emit('deleted', this.item)
       this.close()
     },

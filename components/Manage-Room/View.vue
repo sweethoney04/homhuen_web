@@ -1,12 +1,40 @@
 <template>
   <v-data-table
     :headers="headers"
-    :items="customers"
+    :items="rooms"
     :search="search"
     class="customer-table"
   >
     <template v-slot:item.no="{ item }">
-      {{ customers.indexOf(item) + 1 }}
+      {{ rooms.indexOf(item) + 1 }}
+    </template>
+
+    <template v-slot:item.image="{ item }">
+      <v-img
+        v-if="item.image"
+        :src="item.image || item.cover || item.imageRoom"
+        width="70"
+        height="45"
+        contain
+        class="my-2"
+      ></v-img>
+      <span v-else>-</span>
+    </template>
+
+    <template v-slot:item.roomName="{ item }">
+      {{ item.roomName || item.name || '-' }}
+    </template>
+
+    <template v-slot:item.type="{ item }">
+      {{ item.type || item.roomType || '-' }}
+    </template>
+
+    <template v-slot:item.pricePerMonth="{ item }">
+      {{ item.pricePerMonth || item.price || '-' }}
+    </template>
+
+    <template v-slot:item.description="{ item }">
+      {{ item.description || item.descriptions || '-' }}
     </template>
 
     <template v-slot:item.status="{ item }">
@@ -42,7 +70,7 @@
 export default {
   name: 'ManageRoomView',
   props: {
-    customers: {
+    rooms: {
       type: Array,
       default: () => [],
     },
@@ -54,19 +82,20 @@ export default {
   data: () => ({
     headers: [
       { text: 'ລຳດັບ', value: 'no', sortable: false, width: '70' },
-      { text: 'ຮູບຫ້ອງ', value: 'imageRoom', sortable: false },
-      { text: 'ຊື່ຫ້ອງ', value: 'roomName' },
+      { text: 'ຮູບຫ້ອງ', value: 'image', sortable: false },
+      { text: 'ຊື່ຫ້ອງ', value: 'roomName', sortable: false },
       { text: 'ປະເພດ', value: 'type', sortable: false },
       { text: 'ສະຖານະ', value: 'status' },
-      { text: 'ລາຍລະອຽດ', value: 'detail', sortable: false },
+      { text: 'ຄ່າເຊົ່າ / ເດືອນ', value: 'pricePerMonth', sortable: false },
+      { text: 'ລາຍລະອຽດ', value: 'description', sortable: false },
       { text: 'ແກ້ໄຂ', value: 'edit', sortable: false, align: 'center' },
-      { text: 'ລິບ', value: 'delete', sortable: false, align: 'center' },
+      { text: 'ລົບ', value: 'delete', sortable: false, align: 'center' },
     ],
   }),
   methods: {
     statusColor(status) {
-      if (status === 'ວ່າງ') return 'success'
-      if (status === 'ເຕັມ') return 'amber darken-2'
+      if (status === 'available') return 'success'
+      if (status === 'unavailable') return 'error'
       return 'primary'
     },
   },

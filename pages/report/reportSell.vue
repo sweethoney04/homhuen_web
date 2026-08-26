@@ -18,10 +18,7 @@
         <v-spacer></v-spacer>
 
         <v-col cols="auto">
-          <v-btn color="primary" @click="newCustomer">
-            <v-icon left small>mdi-account-plus</v-icon>
-            ເພີ່ມລູກຄ້າ
-          </v-btn>
+          <ReportCreate @created="addReport"></ReportCreate>
         </v-col>
       </v-row>
 
@@ -86,7 +83,13 @@
 </template>
 
 <script>
+import ReportCreate from '~/components/Report/Create.vue'
+
 export default {
+  name: 'ReportSellPage',
+  components: {
+    ReportCreate,
+  },
   data() {
     return {
       search: '',
@@ -123,20 +126,20 @@ export default {
       return `${Number(value).toLocaleString()} ₭`
     },
 
-    newCustomer() {
-      alert('ເພີ່ມລູກຄ້າ')
+    addReport(report) {
+      this.reports.push(report)
     },
 
     viewDetail(item) {
-      alert(`ລາຍລະອຽດ: ${item.room} - ${item.details}`)
+      item.showDetails = true
     },
 
     openManage(item) {
-      alert(`ຈັດການ: ${item.room}`)
+      item.showDetails = true
     },
 
     calculate(item) {
-      alert(`ຄິດໄລ່: ${item.room} - ${this.formatCurrency(item.payment)}`)
+      item.calculated = true
     },
   },
 }
