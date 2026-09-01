@@ -4,17 +4,9 @@
       <v-card-title class="text-h6">ແກ້ໄຂພະນັກງານ</v-card-title>
 
       <v-card-text>
-        <v-text-field v-model.trim="form.fullName" label="ຊື່-ນາມສະກຸນ" />
-        <v-text-field v-model.trim="form.position" label="ຕຳແໜ່ງ" />
-        <v-text-field v-model.trim="form.phone" label="ເບີໂທ" />
-        <v-text-field v-model.trim="form.email" label="Email" type="email" />
-        <v-switch
-          v-model="form.status"
-          inset
-          color="success"
-          hide-details
-          :label="form.status ? 'Active' : 'Inactive'"
-        />
+        <v-text-field v-model.trim="form.username" label="Username" />
+        <v-text-field v-model.trim="form.phone" label="Phone" />
+        <v-text-field v-model.trim="form.password" label="Password" type="password" />
       </v-card-text>
 
       <v-card-actions>
@@ -63,19 +55,17 @@ export default {
     buildForm(item) {
       return {
         id: item.id,
-        fullName: item.fullName || '',
-        position: item.position || '',
+        username: item.username || item.userName || item.name || '',
         phone: item.phone || '',
-        email: item.email || '',
-        status: item.status !== false,
+        password: '',
       }
     },
     close() {
       this.show = false
     },
     save() {
-      if (!this.form.fullName.trim()) {
-        alert('ກະລຸນາປ້ອນຊື່-ນາມສະກຸນ')
+      if (!this.form.username.trim()) {
+        alert('ກະລຸນາປ້ອນ Username')
         return
       }
 

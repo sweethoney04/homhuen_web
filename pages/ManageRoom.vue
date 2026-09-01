@@ -86,9 +86,17 @@ export default {
       this.loading = true
       this.errorMessage = ''
       try {
-        const { data } = await this.$axios.get('/admin/rooms')
-        // ປັບຕາມໂຄງສ້າງ response ຈິງ ເຊັ່ນ data.data ຫຼື data.rooms
-        this.rooms = data.data || data.rooms || data
+        const token = localStorage.getItem('token')
+        if (!token) {
+          throw new Error('Authentication token is missing')
+        }
+
+        const { data } = await this.$axios.get('/admin/rooms', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        this.rooms = data.data || []
       } catch (err) {
         this.errorMessage = 'ບໍ່ສາມາດໂຫລດຂໍ້ມູນຫ້ອງໄດ້'
         console.error('GET /admin/rooms error:', err)
@@ -97,7 +105,7 @@ export default {
       }
     },
 
-    // Refresh the list after the create dialog saves a room.
+    // Refresh ຫຼັງຈາກເພີ່ມຫ້ອງສຳເລັດ
     async addRoom() {
       await this.initialize()
     },
@@ -107,18 +115,9 @@ export default {
       this.dialogUpdate = true
     },
 
-    // PUT Edit Room
-    async updateRoom(item) {
-      try {
-        const { data } = await this.$axios.put(`/admin/rooms/${item.id}`, item)
-        const updated = data.data || data.room || data
-        const index = this.rooms.findIndex((room) => room.id === item.id)
-        if (index > -1) this.rooms.splice(index, 1, updated)
-        else await this.initialize()
-      } catch (err) {
-        this.errorMessage = 'ບໍ່ສາມາດແກ້ໄຂຫ້ອງໄດ້'
-        console.error('PUT /admin/rooms/:id error:', err)
-      }
+    // Refresh ຫຼັງຈາກແກ້ໄຂຫ້ອງສຳເລັດ
+    async updateRoom() {
+      await this.initialize()
     },
 
     openDelete(item) {
@@ -126,27 +125,27 @@ export default {
       this.dialogDelete = true
     },
 
-    // DELETE Room
-    async removeRoom(item) {
-      try {
-        await this.$axios.delete(`/admin/rooms/${item.id}`)
-        const index = this.rooms.findIndex((room) => room.id === item.id)
-        if (index > -1) {
-          this.rooms.splice(index, 1)
-        }
-      } catch (err) {
-        this.errorMessage = 'ບໍ່ສາມາດລຶບຫ້ອງໄດ້'
-        console.error('DELETE /admin/rooms/:id error:', err)
-      }
+    // Refresh ຫຼັງຈາກລຶບຫ້ອງສຳເລັດ
+    async removeRoom() {
+      await this.initialize()
     },
 
     // PATCH/PUT toggle active status
     async toggleStatus(item) {
       const newStatus = !item.active
       try {
+        const token = localStorage.getItem('token')
+        if (!token) {
+          throw new Error('Authentication token is missing')
+        }
+
         await this.$axios.put(`/admin/rooms/${item.id}`, {
           ...item,
           active: newStatus,
+        }, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         })
         item.active = newStatus
       } catch (err) {

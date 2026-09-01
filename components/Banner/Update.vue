@@ -1,14 +1,124 @@
+<!-- components/Banner/Update.vue -->
 <template>
-  <v-dialog v-model="show" max-width="420px">
-    <v-card>
-      <v-card-title class="text-h6">
-        ທ່ານແນ່ໃຈບໍ່ວ່າຈະລົບ Banner ນີ້?
+  <v-dialog v-model="show" max-width="650px" persistent>
+    <v-card class="rounded-lg overflow-hidden pb-4">
+      <v-card-title
+        class="white--text d-flex justify-space-between align-center px-6 py-3"
+        style="background-color: #064d8d"
+      >
+        <span class="text-subtitle-1 font-weight-medium">ແກ້ໄຂ Banner</span>
+        <v-btn icon dark small @click="close">
+          <v-icon size="18">mdi-close</v-icon>
+        </v-btn>
       </v-card-title>
-      <v-card-actions>
-        <v-spacer></v-spacer>
-        <v-btn text @click="close">Cancel</v-btn>
-        <v-btn color="error" text @click="confirm">OK</v-btn>
-        <v-spacer></v-spacer>
+
+      <v-card-text class="pt-6 px-6">
+        <v-container class="pa-0">
+          <v-row dense>
+            <v-col cols="12">
+              <div
+                class="image-upload-box d-flex flex-column align-center justify-center"
+                @click="$refs.imageInput.click()"
+              >
+                <v-img
+                  v-if="form.imagePreview"
+                  :src="form.imagePreview"
+                  max-height="160"
+                  contain
+                  class="rounded"
+                />
+                <div v-else class="text-center caption-text d-flex align-center justify-center">
+                  <v-icon color="#9E9E9E" class="mr-2" size="20">mdi-image-outline</v-icon>
+                  <span>ອັບໂຫລດຮູບພາບ (ແນະນຳ 1600×600 px)</span>
+                </div>
+                <input
+                  ref="imageInput"
+                  type="file"
+                  accept="image/*"
+                  class="d-none"
+                  @change="onImageChange"
+                />
+              </div>
+            </v-col>
+          </v-row>
+
+          <v-row class="mt-4" dense>
+            <v-col cols="12" sm="6" class="pr-sm-2">
+              <div class="field-label">ຊື່ຫົວຂໍ້ Banner</div>
+              <v-text-field
+                v-model="form.topic"
+                dense
+                outlined
+                hide-details
+                placeholder="ຊື່ຫົວຂໍ້ Banner"
+                class="custom-input"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="12" sm="6" class="pl-sm-2">
+              <div class="field-label">Link</div>
+              <v-text-field
+                v-model="form.link_url"
+                dense
+                outlined
+                hide-details
+                type="url"
+                placeholder="link"
+                class="custom-input"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="12" sm="6" class="mt-3 pr-sm-2">
+              <div class="field-label">ລຳດັບການສະແດງ</div>
+              <v-text-field
+                v-model.number="form.display_order"
+                dense
+                outlined
+                hide-details
+                type="number"
+                placeholder="1"
+                class="custom-input"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="12" sm="6" class="mt-3 pl-sm-2">
+              <div class="field-label">ສະຖານະ</div>
+              <v-select
+                v-model="form.status"
+                :items="statusOptions"
+                item-text="text"
+                item-value="value"
+                class="custom-input"
+                outlined
+                dense
+                hide-details
+              />
+            </v-col>
+            <v-col cols="12" class="mt-3">
+              <div class="field-label">Banner Type</div>
+              <v-select
+                v-model="form.type"
+                :items="typeOptions"
+                item-text="text"
+                item-value="value"
+                class="custom-input"
+                outlined
+                dense
+                hide-details
+              />
+            </v-col>
+          </v-row>
+        </v-container>
+      </v-card-text>
+
+      <v-card-actions class="px-6 pt-2 pb-2">
+        <v-spacer />
+        <v-btn
+          color="#064D8D"
+          dark
+          depressed
+          class="px-8 rounded-lg text-none font-weight-regular"
+          @click="save"
+        >
+          ບັນທຶກ
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -16,37 +126,107 @@
 
 <script>
 export default {
-  name: 'BannerDelete',
+  name: 'BannerUpdate',
   props: {
-    value: {
-      type: Boolean,
-      default: false,
-    },
-    item: {
-      type: Object,
-      default: () => ({}),
-    },
+    value: { type: Boolean, default: false },
+    item: { type: Object, default: () => ({}) },
+  },
+  data() {
+    return {
+      form: this.buildForm(this.item),
+      statusOptions: [
+        { text: 'ເປີດໃຊ້ງານ', value: 1 },
+        { text: 'ປິດໃຊ້ງານ', value: 0 },
+      ],
+      typeOptions: [
+        { text: 'HomePage', value: 0 },
+        { text: 'RoomPage', value: 1 },
+      ],
+    }
   },
   computed: {
     show: {
       get() {
         return this.value
       },
-      set(val) {
-        this.$emit('input', val)
+      set(value) {
+        this.$emit('input', value)
       },
     },
   },
+  watch: {
+    item(value) {
+      this.form = this.buildForm(value)
+    },
+  },
   methods: {
+    buildForm(item) {
+      return {
+        id: item.id || null,
+        topic: item.topic || '',
+        link_url: item.link_url || '',
+        display_order: item.display_order || 1,
+        type: item.type === 1 ? 1 : 0,
+        status: item.status === 0 ? 0 : 1,
+        imagePreview: item.image || '', // existing (already resolved) image URL
+        imageFile: null, // only set when the user picks a new file
+      }
+    },
+    onImageChange(event) {
+      const file = event.target.files[0]
+      if (file) {
+        this.form.imagePreview = URL.createObjectURL(file)
+        this.form.imageFile = file
+      }
+    },
     close() {
       this.show = false
     },
-    confirm() {
-      // TODO: ຮ້ອງ API ລົບ Banner ຕົວຢ່າງ:
-      // await this.$axios.delete(`/banners/${this.item.id}`)
-      this.$emit('deleted', this.item)
+    save() {
+      if (!this.form.topic || !this.form.link_url) {
+        this.$emit('error', 'Please fill in all required fields')
+        return
+      }
+      this.$emit('updated', { ...this.form })
       this.close()
     },
   },
 }
 </script>
+
+<style scoped>
+.image-upload-box {
+  border: 1px dashed #bdbdbd;
+  border-radius: 8px;
+  height: 180px;
+  cursor: pointer;
+  background-color: #fafafa;
+  transition: all 0.2s ease-in-out;
+}
+.image-upload-box:hover {
+  border-color: #064d8d;
+  background-color: #f4f7fa;
+}
+.caption-text {
+  font-size: 13px;
+  color: #9e9e9e;
+}
+.field-label {
+  font-size: 13px;
+  color: #424242;
+  margin-bottom: 6px;
+  font-weight: 400;
+}
+::v-deep .custom-input .v-input__control .v-input__slot {
+  min-height: 40px !important;
+  border-radius: 6px;
+  background-color: #ffffff !important;
+}
+::v-deep .v-text-field--outlined fieldset {
+  border-color: #e0e0e0;
+}
+::v-deep .custom-input .v-select__selections,
+::v-deep .custom-input input {
+  font-size: 13px;
+}
+</style>

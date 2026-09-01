@@ -92,25 +92,20 @@ export default {
     loading: false,
     errorMessage: '',
     editedItem: {
-      fullName: '',
-      position: '',
+      username: '',
       phone: '',
-      email: '',
+      password: '',
       status: true,
     },
     defaultItem: {
-      fullName: '',
-      position: '',
+      username: '',
       phone: '',
-      email: '',
+      password: '',
       status: true,
     },
     headers: [
       { text: 'ລຳດັບ', value: 'no', sortable: false, width: '70' },
-      { text: 'ຊື່-ນາມສະກຸນ', value: 'fullName', sortable: false },
-      { text: 'ຕໍາແໜ່ງ', value: 'position', sortable: false },
       { text: 'ເບີໂທ', value: 'phone', sortable: false },
-      { text: 'Email', value: 'email', sortable: false },
       { text: 'ສະຖານະ', value: 'status', sortable: false, align: 'center' },
       { text: 'ແກ້ໄຂ', value: 'edit', sortable: false, align: 'center' },
       { text: 'ລົບ', value: 'delete', sortable: false, align: 'center' },
@@ -135,9 +130,8 @@ export default {
 
       try {
         const { data } = await this.$axios.get('/admin/users')
-        this.users = Array.isArray(data)
-          ? data
-          : data.data || data.users || []
+        const users = Array.isArray(data) ? data : data.data || data.users || []
+        this.users = users.map((user) => this.normalizeUser(user))
       } catch (error) {
         this.errorMessage = 'ບໍ່ສາມາດໂຫລດຂໍ້ມູນພະນັກງານໄດ້'
         console.error('GET /admin/users error:', error)
@@ -154,8 +148,12 @@ export default {
 
     async addUser(user) {
       try {
-        const { data } = await this.$axios.post('/admin/users', user)
-        this.users.push(data.data || data.user || data)
+        const { data } = await this.$axios.post(
+          '/admin/users',
+          this.userPayload(user)
+        )
+        const createdUser = data.data || data.user || data
+        this.users.push(this.normalizeUser(createdUser, user))
       } catch (error) {
         this.errorMessage = 'ບໍ່ສາມາດເພີ່ມພະນັກງານໄດ້'
         console.error('POST /admin/users error:', error)
@@ -195,9 +193,10 @@ export default {
       try {
         const { data } = await this.$axios.put(
           `/admin/users/${user.id}`,
-          user
+          this.userPayload(user)
         )
-        this.users.splice(index, 1, data.data || data.user || data)
+        const updatedUser = data.data || data.user || data
+        this.users.splice(index, 1, this.normalizeUser(updatedUser, user))
       } catch (error) {
         this.errorMessage = 'ບໍ່ສາມາດແກ້ໄຂພະນັກງານໄດ້'
         console.error('PUT /admin/users/:id error:', error)
@@ -219,6 +218,26 @@ export default {
         this.editedItem = { ...this.defaultItem }
         this.editedIndex = -1
       })
+    },
+
+    normalizeUser(user, fallback = {}) {
+      return {
+        ...fallback,
+        ...user,
+        username: user.username || user.userName || user.name || fallback.username || '',
+        phone: user.phone || user.phoneNumber || fallback.phone || '',
+        password: user.password || fallback.password || '',
+        status: user.status !== undefined ? user.status : fallback.status !== false,
+      }
+    },
+
+    userPayload(user) {
+      return {
+        ...user,
+        username: user.username,
+        phone: user.phone,
+        password: user.password,
+      }
     },
   },
 }

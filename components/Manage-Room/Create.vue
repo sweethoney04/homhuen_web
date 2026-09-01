@@ -11,7 +11,8 @@
         class="white--text d-flex justify-space-between align-center"
         style="background-color: #064d8d"
       >
-        <span class="text-h6">ເພີ່ມ / ແກ້ໄຂ ຫ້ອງແຖວ</span>
+        <span class="text-h6">
+          <div>ເພີ່ມ / ແກ້ໄຂ ຫ້ອງແຖວ</div></span>
         <v-btn icon dark @click="close">
           <v-icon>mdi-close</v-icon>
         </v-btn>
@@ -77,7 +78,8 @@
           <!-- ຂໍ້ມູນຫ້ອງ -->
           <v-row class="mt-2">
             <v-col cols="12">
-              <div class="text-subtitle-1 font-weight-bold">ຂໍ້ມູນຫ້ອງ</div>
+              <div class="text-subtitle-1 font-weight-bold">
+                <div>ຂໍ້ມູນຫ້ອງ</div></div>
             </v-col>
 
             <v-col cols="12" sm="6">
@@ -95,11 +97,11 @@
               <div class="label-text">ຄ່າເຊົ່າຕໍ່ເດືອນ</div>
               <v-text-field
                 v-model="form.pricePerMonth"
+                @input="formatPrice"
                 dense
                 outlined
                 hide-details
                 suffix="ກີບ"
-                type="number"
                 placeholder="0"
               ></v-text-field>
             </v-col>
@@ -107,8 +109,8 @@
             <v-col cols="12" sm="6">
               <div class="label-text">ສະຖານະ</div>
               <v-select
-                v-model="form.status"
-                :items="statusOptions"
+                v-model="form.availability"
+                :items="availabilityOptions"
                 item-text="text"
                 item-value="value"
                 dense
@@ -221,6 +223,7 @@
           color="#064D8D"
           dark
           style="width: 150px; height: 42px"
+          :loading="loading"
           @click="save"
         >
           Save
@@ -242,7 +245,10 @@ export default {
         iconFile: null,
         name: "",
       },
-      statusOptions: [
+      // "ວ່າງ / ບໍ່ວ່າງ" maps to the backend's `available` field.
+      // This is intentionally separate from the backend's `status` field,
+      // which tracks paid/unpaid billing state and is managed elsewhere.
+      availabilityOptions: [
         { text: "ເປີດ / ວ່າງ", value: "available" },
         { text: "ປິດ / ບໍ່ວ່າງ", value: "unavailable" },
       ],
@@ -254,11 +260,15 @@ export default {
     };
   },
   methods: {
+    formatPrice(value) {
+      const digits = String(value || '').replace(/\D/g, '')
+      this.form.pricePerMonth = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    },
     emptyForm() {
       return {
         roomName: "",
         pricePerMonth: "",
-        status: "",
+        availability: "available",
         type: "",
         description: "",
         image: "",
@@ -305,28 +315,35 @@ export default {
     },
     async save() {
       try {
-        // 1. Validation ເບື້ອງຕົ້ນ
         if (!this.form.roomName || !this.form.roomName.trim()) {
           alert("ກະລຸນາປ້ອນຊື່ຫ້ອງແຖວ");
           return;
         }
 
-        this.loading = true; // ເປີດ loading ຢູ່ປຸ່ມ Save
+        this.loading = true;
 
-        // 2. ສ້າງ FormData ເພື່ອສົ່ງໄປ Backend Multipart
         const formData = new FormData();
         formData.append("name", this.form.roomName.trim());
-        formData.append("price", this.form.pricePerMonth || "0");
-        formData.append("descriptions", this.form.description || "");
-        formData.append("roomType", this.form.type || "");
-        formData.append("status", this.form.status);
+        formData.append(
+          "price",
+          this.form.pricePerMonth.replace(/,/g, "") || "0"
+        );
+        const description = this.form.description || "";
+        formData.append("description", description);
+        formData.append("descriptions", description);
+        // Backend expects roomType as 0 (small) or 1 (large), not a string.
+        formData.append("roomType", this.form.type === "large" ? "1" : "0");
+        // Availability maps to the `available` field, kept separate from
+        // the backend's billing `status` field.
+        formData.append(
+          "available",
+          this.form.availability === "available" ? "true" : "false"
+        );
 
-        // ຮູບຫຼັກ (Cover)
         if (this.form.imageFile) {
           formData.append("cover", this.form.imageFile);
         }
 
-        // ຮູບຍ່ອຍ (Images)
         if (this.form.subImageFiles && this.form.subImageFiles.length > 0) {
           this.form.subImageFiles.forEach((file) => {
             if (file) {
@@ -335,32 +352,23 @@ export default {
           });
         }
 
-        let response;
+        // Send feature names + a hasIcon flag so the backend can line up
+        // uploaded icon files (only features with an icon add one) with
+        // the right feature, in order.
+        const featuresMeta = this.form.features.map((f) => ({
+          name: f.name,
+          hasIcon: false,
+        }));
+        formData.append("features", JSON.stringify(featuresMeta));
 
-        // 3. ເຊັກວ່າເປັນການ ເພີ່ມ (Create) ຫຼື ແກ້ໄຂ (Edit)
-        if (this.form.id) {
-          // --- ແກ້ໄຂ (PUT) ---
-          response = await this.$axios.put(
-            `/admin/rooms/${this.form.id}`,
-            formData,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-            }
-          );
-        } else {
-          // --- ສ້າງໃໝ່ (POST) ---
-          response = await this.$axios.post("/admin/rooms", formData, {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          });
+        if (!localStorage.getItem("token")) {
+          throw new Error("Authentication token is missing");
         }
 
-        // 4. ເມື່ອສຳເລັດ
+        // Let Axios/browser set the multipart boundary automatically.
+        const response = await this.$axios.post("/admin/rooms", formData);
+
         if (response.data.success) {
-          // ສົ່ງ event ບອກ Component ແມ່ໃຫ້ດຶງຂໍ້ມູນໃໝ່
           this.$emit("created", response.data.data || response.data);
           this.close();
         } else {
@@ -369,7 +377,11 @@ export default {
       } catch (error) {
         console.error("Save room error:", error);
         alert(
-          error.response?.data?.message || "ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກຂໍ້ມູນ"
+          error.response?.status === 401
+            ? "Session expired. Please log in again."
+            : error.response?.data?.message ||
+              error.message ||
+              "ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກຂໍ້ມູນ"
         );
       } finally {
         this.loading = false;
@@ -415,4 +427,3 @@ export default {
   margin-top: 24px;
 }
 </style>
-

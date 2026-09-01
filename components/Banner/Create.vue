@@ -1,3 +1,4 @@
+<!-- components/Banner/Create.vue -->
 <template>
   <v-dialog v-model="show" max-width="650px" persistent>
     <template v-slot:activator="{ on, attrs }">
@@ -7,21 +8,18 @@
     </template>
 
     <v-card class="rounded-lg overflow-hidden pb-4">
-      <!-- Header Bar -->
       <v-card-title
         class="white--text d-flex justify-space-between align-center px-6 py-3"
         style="background-color: #064d8d"
       >
-        <span class="text-subtitle-1 font-weight-medium">ເພີ່ມ / ແກ້ໄຂ Banner</span>
+        <span class="text-subtitle-1 font-weight-medium">ເພີ່ມ Banner</span>
         <v-btn icon dark small @click="close">
           <v-icon size="18">mdi-close</v-icon>
         </v-btn>
       </v-card-title>
 
-      <!-- Form Content -->
       <v-card-text class="pt-6 px-6">
         <v-container class="pa-0">
-          <!-- Image Upload Area -->
           <v-row dense>
             <v-col cols="12">
               <div
@@ -29,8 +27,8 @@
                 @click="$refs.imageInput.click()"
               >
                 <v-img
-                  v-if="form.image"
-                  :src="form.image"
+                  v-if="form.imagePreview"
+                  :src="form.imagePreview"
                   max-height="160"
                   contain
                   class="rounded"
@@ -50,9 +48,7 @@
             </v-col>
           </v-row>
 
-          <!-- Form Inputs -->
           <v-row class="mt-4" dense>
-            <!-- 1. Banner Title & Link -->
             <v-col cols="12" sm="6" class="pr-sm-2">
               <div class="field-label">ຊື່ຫົວຂໍ້ Banner</div>
               <v-text-field
@@ -68,7 +64,7 @@
             <v-col cols="12" sm="6" class="pl-sm-2">
               <div class="field-label">Link</div>
               <v-text-field
-                v-model="form.link"
+                v-model="form.link_url"
                 dense
                 outlined
                 hide-details
@@ -78,11 +74,10 @@
               ></v-text-field>
             </v-col>
 
-            <!-- 2. Display Order & Status -->
             <v-col cols="12" sm="6" class="mt-3 pr-sm-2">
               <div class="field-label">ລຳດັບການສະແດງ</div>
               <v-text-field
-                v-model.number="form.order"
+                v-model.number="form.display_order"
                 dense
                 outlined
                 hide-details
@@ -95,10 +90,10 @@
             <v-col cols="12" sm="6" class="mt-3 pl-sm-2">
               <div class="field-label">ສະຖານະ</div>
               <v-select
-                v-model="form.active"
+                v-model="form.status"
                 :items="[
-                  { text: 'ເປີດໃຊ້ງານ', value: true },
-                  { text: 'ປິດໃຊ້ງານ', value: false }
+                  { text: 'ເປີດໃຊ້ງານ', value: 1 },
+                  { text: 'ປິດໃຊ້ງານ', value: 0 }
                 ]"
                 item-text="text"
                 item-value="value"
@@ -109,7 +104,6 @@
               ></v-select>
             </v-col>
 
-            <!-- 3. Banner Type -->
             <v-col cols="12" class="mt-3">
               <div class="field-label">Banner Type</div>
               <v-select
@@ -127,7 +121,6 @@
         </v-container>
       </v-card-text>
 
-      <!-- Action Footer -->
       <v-card-actions class="px-6 pt-2 pb-2">
         <v-spacer></v-spacer>
         <v-btn
@@ -152,28 +145,27 @@ export default {
       show: false,
       form: this.emptyForm(),
       typeOptions: [
-        { text: "ຂະໜາດນ້ອຍ (Small)", value: 0 },
-        { text: "ຂະໜາດໃຫຍ່ (Large)", value: 1 },
+        { text: "HomePage", value: 0 },
+        { text: "RoomPage", value: 1 },
       ],
     };
   },
   methods: {
     emptyForm() {
       return {
-        id: null,
         topic: "",
-        link: "",
-        order: 1,
+        link_url: "",
+        display_order: 1,
         type: 0,
-        active: true,
-        image: "",
+        status: 1,
+        imagePreview: "",
         imageFile: null,
       };
     },
     onImageChange(event) {
       const file = event.target.files[0];
       if (file) {
-        this.form.image = URL.createObjectURL(file);
+        this.form.imagePreview = URL.createObjectURL(file);
         this.form.imageFile = file;
       }
     },
@@ -184,8 +176,9 @@ export default {
       });
     },
     save() {
-      if (!this.form.topic || !this.form.link) {
-        this.$emit("error", "Please fill in all required fields");
+      // image is required by the backend on create
+      if (!this.form.topic || !this.form.link_url || !this.form.imageFile) {
+        this.$emit("error", "ກະລຸນາປ້ອນຫົວຂໍ້, ລິ້ງ ແລະ ອັບໂຫລດຮູບພາບໃຫ້ຄົບ");
         return;
       }
       this.$emit("created", { ...this.form });
@@ -204,39 +197,29 @@ export default {
   background-color: #fafafa;
   transition: all 0.2s ease-in-out;
 }
-
 .image-upload-box:hover {
   border-color: #064d8d;
   background-color: #f4f7fa;
 }
-
 .caption-text {
   font-size: 13px;
   color: #9e9e9e;
 }
-
 .field-label {
   font-size: 13px;
   color: #424242;
   margin-bottom: 6px;
   font-weight: 400;
 }
-
-/* Customize Vuetify inputs layout to match Figma rounded style */
 ::v-deep .custom-input .v-input__control .v-input__slot {
   min-height: 40px !important;
   border-radius: 6px;
   background-color: #ffffff !important;
 }
-
 ::v-deep .v-text-field--outlined fieldset {
   border-color: #e0e0e0;
 }
-
-::v-deep .custom-input .v-select__selections {
-  font-size: 13px;
-}
-
+::v-deep .custom-input .v-select__selections,
 ::v-deep .custom-input input {
   font-size: 13px;
 }

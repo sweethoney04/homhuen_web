@@ -137,7 +137,7 @@ export default {
       miniVariant: false,
       defaultAvatar: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ6nBO8Qw1Qq4sJHuWaTnOsMUIZFA4scakzfvlI8f6yPqfNgIyLpnpqicg&s=10',
       user: {
-        name: 'Thida Khamkeo',
+        name: 'Honey Chitlatda',
         role: 'Admin',
         avatar: '',
       },

@@ -2,7 +2,7 @@
   <v-dialog v-model="show" max-width="500px">
     <template v-slot:activator="{ on, attrs }">
       <v-btn color="#064D8D" dark v-bind="attrs" v-on="on">
-        ເພີ່ມ ພະນັກງານ
+        ເພີ່ມ User ໃໝ່
       </v-btn>
     </template>
 
@@ -12,7 +12,8 @@
         class="white--text d-flex justify-space-between align-center px-6 py-3"
         style="background-color: #064d8d"
       >
-        <span class="text-subtitle-1 font-weight-medium">ລາຍລະອຽດພະນັກງານ</span>
+        <span class="text-subtitle-1 font-weight-medium">
+          <div>ລາຍລະອຽດພະນັກງານ</div></span>
         <v-btn icon dark small @click="close">
           <v-icon size="18">mdi-close</v-icon>
         </v-btn>
@@ -20,56 +21,16 @@
 
       <!-- Form Content -->
       <v-card-text class="pt-4 px-6">
-        <div class="text-subtitle-2 font-weight-bold mb-2 primary-text">ຂໍ້ມູນພະນັກງານ</div>
+        <div class="text-subtitle-2 font-weight-bold mb-2 primary-text">
+          <div>ຂໍ້ມູນ User</div></div>
 
         <v-container class="pa-0">
           <v-row dense>
-            <!-- 1. Full Name (Full Width) -->
-            <v-col cols="12">
-              <div class="field-label">ຊື່ ແລະ ນາມສະກຸນ</div>
-              <v-text-field
-                v-model="form.EmployeeName"
-                dense
-                outlined
-                hide-details
-                placeholder="ຊື່ ແລະ ນາມສະກຸນ"
-                prepend-inner-icon="mdi-account-outline"
-                class="custom-input"
-              ></v-text-field>
-            </v-col>
 
-            <!-- 2. Phone & Contact Channel -->
-            <v-col cols="12" sm="6" class="mt-2 pr-sm-2">
-              <div class="field-label">ເພດ</div>
-              <v-text-field
-                v-model="form.gender"
-                dense
-                outlined
-                hide-details
-                type="gender"
-                placeholder="ເພດ"
-                class="custom-input"
-              ></v-text-field>
-            </v-col>
-
-            <v-col cols="12" sm="6" class="mt-2 pl-sm-2">
-              <div class="field-label">ວັນເດືອນປີເກີດ</div>
-              <v-text-field
-                v-model="form.dateOfBirth"
-                dense
-                outlined
-                hide-details
-                type="date"
-                placeholder="DD/MM/YYYY"
-                class="custom-input"
-              ></v-text-field>
-            </v-col>
-
-            <!-- 3. Interested Room (Full Width) -->
             <v-col cols="12" class="mt-2">
-              <div class="field-label">ເບີໂທລະສັບ</div>
+              <div class="field-label">Phone</div>
               <v-text-field
-                v-model="form.phoneNumber"
+                v-model="form.phone"
                 dense
                 outlined
                 hide-details
@@ -80,50 +41,16 @@
             </v-col>
 
             <v-col cols="12" class="mt-2">
-              <div class="field-label">ເລກປະຈຳຕົວ / Passport</div>
+              <div class="field-label">Password</div>
               <v-text-field
-                v-model="form.idNumber"
+                v-model="form.password"
                 dense
                 outlined
                 hide-details
-                type="text"
-                placeholder="ເລກປະຈຳຕົວ / Passport"
+                type="password"
+                placeholder="Password"
                 class="custom-input"
               ></v-text-field>
-            </v-col>
-             <v-col cols="12" class="mt-2">
-              <div class="field-label">Email</div>
-              <v-text-field
-                v-model="form.email"
-                dense
-                outlined
-                hide-details
-                type="email"
-                placeholder="Email"
-                class="custom-input"
-              ></v-text-field>
-            </v-col>
-            <v-col cols="12" class="mt-2">
-              <div class="field-label">ຕຳແໜ່ງ</div>
-              <v-text-field
-                v-model="form.position"
-                dense
-                outlined
-                hide-details
-                type="text"
-                placeholder="ຕຳແໜ່ງ"
-                class="custom-input"
-              ></v-text-field>
-            </v-col>
-
-            <v-col cols="12" class="mt-2">
-              <v-switch
-                v-model="form.status"
-                inset
-                color="success"
-                hide-details
-                :label="form.status ? 'Active' : 'Inactive'"
-              ></v-switch>
             </v-col>
           </v-row>
         </v-container>
@@ -139,7 +66,7 @@
           class="rounded-lg text-none font-weight-medium px-6"
           @click="save"
         >
-          ບັນທຶກ
+          Submit
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -160,14 +87,9 @@ export default {
   methods: {
     emptyForm() {
       return {
-        EmployeeName: '',
-        gender: '',
-        dateOfBirth: '',
-        phoneNumber: '',
-        idNumber: '',
-        email: '',
-        position: '',
-        status: true,
+        username: '',
+        phone: '',
+        password: '',
       }
     },
     addContactNote() {
@@ -186,8 +108,8 @@ export default {
       })
     },
     save() {
-      if (!this.form.EmployeeName.trim()) {
-        alert('ກະລຸນາປ້ອນຊື່-ນາມສະກຸນ')
+      if (!this.form.username.trim() || !this.form.password.trim()) {
+        alert('ກະລຸນາປ້ອນ Username ແລະ Password')
         return
       }
 

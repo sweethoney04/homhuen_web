@@ -18,7 +18,16 @@
         <v-spacer />
 
         <v-col cols="auto">
-          <v-btn color="#064D8D" dark class="white--text" @click="openCreate">
+          <!-- Backend only ever stores ONE contact record (singleton).
+               Hide "ເພີ່ມ" once a record already exists, so users don't
+               trigger a 409 from the backend. -->
+          <v-btn
+            v-if="aboutItems.length === 0"
+            color="#064D8D"
+            dark
+            class="white--text"
+            @click="openCreate"
+          >
             ເພີ່ມ
           </v-btn>
         </v-col>
@@ -28,6 +37,7 @@
         :headers="headers"
         :items="aboutItems"
         :search="search"
+        :loading="loading"
         class="about-table"
       >
         <template v-slot:item.no="{ item }">
@@ -65,7 +75,7 @@
         class="white--text d-flex justify-space-between align-center px-6 py-3"
         style="background-color: #064d8d"
       >
-        <span class="text-subtitle-1 font-weight-medium">ເພີ່ມ / ແກ້ໄຂ About Us</span>
+        <span class="text-subtitle-1 font-weight-medium">{{ formTitle }}</span>
         <v-btn icon dark small @click="close">
           <v-icon size="18">mdi-close</v-icon>
         </v-btn>
@@ -73,12 +83,12 @@
 
       <!-- Form Content -->
       <v-card-text class="pt-6 px-6">
-        <v-container class="pa-0">
-          <!-- Image Upload Area -->
+        <v-alert v-if="formError" type="error" dense text class="mb-4">
+          {{ formError }}
+        </v-alert>
 
-          <!-- Form Inputs -->
+        <v-container class="pa-0">
           <v-row class="mt-4" dense>
-            <!-- 1. Banner Title & Link -->
             <v-col cols="12" sm="6" class="pr-sm-2">
               <div class="field-label">ເບີໂທ</div>
               <v-text-field
@@ -104,7 +114,6 @@
               ></v-text-field>
             </v-col>
 
-            <!-- 2. Display Order & Status -->
             <v-col cols="12" sm="6" class="mt-3 pr-sm-2">
               <div class="field-label">Map Link</div>
               <v-text-field
@@ -141,6 +150,7 @@
           dark
           depressed
           class="px-8 rounded-lg text-none font-weight-regular"
+          :loading="saving"
           @click="save"
         >
           ບັນທຶກ
@@ -158,7 +168,7 @@
         <v-card-actions>
           <v-spacer />
           <v-btn text @click="closeDelete">Cancel</v-btn>
-          <v-btn color="error" text @click="deleteItemConfirm">OK</v-btn>
+          <v-btn color="error" text :loading="deleting" @click="deleteItemConfirm">OK</v-btn>
           <v-spacer />
         </v-card-actions>
       </v-card>
@@ -167,125 +177,196 @@
 </template>
 
 <script>
+import axios from "axios";
+
+// Adjust to match your project's real API base path / axios instance.
+const API_URL = "http://localhost:8000/api/admin/contact";
+
+// NOTE: this assumes a bearer token stored in localStorage, which is a
+// common pattern but may not match your project's actual auth setup.
+// Swap this for however your app already attaches auth headers
+// (e.g. a shared axios instance / interceptor) if one already exists.
+function authHeaders() {
+  const token = localStorage.getItem("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export default {
   data() {
     return {
-      search: '',
+      search: "",
       dialog: false,
       dialogDelete: false,
+      loading: false,
+      saving: false,
+      deleting: false,
+      formError: "",
       form: this.emptyForm(),
       headers: [
-      { text: 'ລຳດັບ', value: 'no', sortable: false, width: '70' },
-      { text: 'ເບີໂທ', value: 'phoneNumber', sortable: false },
-      { text: 'Email', value: 'email', sortable: false },
-      { text: 'Address', value: 'address', sortable: false },
-      { text: 'Map Link', value: 'mapLink', sortable: false },
-      { text: 'ແກ້ໄຂ', value: 'edit', sortable: false, align: 'center' },
-      { text: 'ລົບ', value: 'delete', sortable: false, align: 'center' },
-    ],
+        { text: "ລຳດັບ", value: "no", sortable: false, width: "70" },
+        { text: "ເບີໂທ", value: "phoneNumber", sortable: false },
+        { text: "Email", value: "email", sortable: false },
+        { text: "Address", value: "address", sortable: false },
+        { text: "Map Link", value: "mapLink", sortable: false },
+        { text: "ແກ້ໄຂ", value: "edit", sortable: false, align: "center" },
+        { text: "ລົບ", value: "delete", sortable: false, align: "center" },
+      ],
+      // Backend is a singleton: this will hold at most one item.
       aboutItems: [],
       editedIndex: -1,
-      editedItem: {
-        phoneNumber: '',
-        email: '',
-        address: '',
-        mapLink: '',
-      },
-      defaultItem: {
-        phoneNumber: '',
-        email: '',
-        address: '',
-        mapLink: '',
-      },
+      editedItem: null,
     };
   },
 
   computed: {
     formTitle() {
-      return this.editedIndex === -1 ? 'ເພີ່ມ About Us' : 'ແກ້ໄຂ About Us'
+      return this.editedIndex === -1 ? "ເພີ່ມ About Us" : "ແກ້ໄຂ About Us";
     },
   },
 
   created() {
-    this.initialize()
+    this.initialize();
   },
 
   methods: {
     emptyForm() {
       return {
-        phoneNumber: '',
-        email: '',
-        address: '',
-        mapLink: '',
+        phoneNumber: "",
+        email: "",
+        address: "",
+        mapLink: "",
       };
     },
 
-    initialize() {
-      this.aboutItems = [
-        {
-          phoneNumber: '020 123 4567',
-          email: 'info@homhuen.com',
-          address: 'ບ້ານໂພນສີນວນ, ເມືອງສີສັດຕະນາກ, ນະຄອນຫຼວງວຽງຈັນ',
-          mapLink: 'https://maps.google.com/?q=Vientiane',
-        },
-        {
-          phoneNumber: '020 987 6543',
-          email: 'support@homhuen.com',
-          address: 'ບ້ານຫັດສະດີ, ເມືອງຈັນທະບູລິ, ນະຄອນຫຼວງວຽງຈັນ',
-          mapLink: 'https://maps.google.com/?q=Vientiane',
-        },
-      ]
+    // --- Mapping helpers: backend uses tel/link, frontend uses phoneNumber/mapLink ---
+    fromApi(record) {
+      return {
+        id: record.id,
+        phoneNumber: record.tel || "",
+        email: record.email || "",
+        address: record.address || "",
+        mapLink: record.link || "",
+      };
+    },
+
+    toApiPayload(item) {
+      return {
+        tel: item.phoneNumber || null,
+        email: item.email || null,
+        address: item.address || null,
+        link: item.mapLink || null,
+      };
+    },
+
+    async initialize() {
+      this.loading = true;
+      try {
+        const { data } = await axios.get(API_URL, { headers: authHeaders() });
+        // Backend returns a single object (singleton contact), not a list.
+        // Wrap it in an array so the existing table UI can still render it.
+        this.aboutItems = data.data ? [this.fromApi(data.data)] : [];
+      } catch (err) {
+        if (err.response?.status === 404) {
+          // No contact record created yet - that's a valid empty state.
+          this.aboutItems = [];
+        } else {
+          console.error("Failed to load About Us contacts:", err);
+        }
+      } finally {
+        this.loading = false;
+      }
     },
 
     openCreate() {
-      this.editedIndex = -1
-      this.editedItem = { ...this.defaultItem }
-      this.dialog = true
+      this.editedIndex = -1;
+      this.editedItem = null;
+      this.form = this.emptyForm();
+      this.formError = "";
+      this.dialog = true;
     },
 
     editItem(item) {
-      this.editedIndex = this.aboutItems.indexOf(item)
-      this.editedItem = { ...item }
-      this.dialog = true
+      this.editedIndex = this.aboutItems.indexOf(item);
+      this.editedItem = item;
+      this.form = { ...item };
+      this.formError = "";
+      this.dialog = true;
     },
 
     deleteItem(item) {
-      this.editedIndex = this.aboutItems.indexOf(item)
-      this.editedItem = { ...item }
-      this.dialogDelete = true
+      this.editedIndex = this.aboutItems.indexOf(item);
+      this.editedItem = item;
+      this.dialogDelete = true;
     },
 
-    deleteItemConfirm() {
-      this.aboutItems.splice(this.editedIndex, 1)
-      this.closeDelete()
+    async deleteItemConfirm() {
+      if (!this.editedItem) return this.closeDelete();
+      this.deleting = true;
+      try {
+        // Backend has no :id on DELETE - it always removes the single
+        // existing record, so no id is appended to the URL here.
+        await axios.delete(API_URL, { headers: authHeaders() });
+        this.aboutItems.splice(this.editedIndex, 1);
+        this.closeDelete();
+      } catch (err) {
+        console.error("Failed to delete contact:", err);
+      } finally {
+        this.deleting = false;
+      }
     },
 
     close() {
-      this.dialog = false
+      this.dialog = false;
       this.$nextTick(() => {
-        this.editedItem = { ...this.defaultItem }
-        this.editedIndex = -1
-      })
+        this.form = this.emptyForm();
+        this.editedItem = null;
+        this.editedIndex = -1;
+        this.formError = "";
+      });
     },
 
     closeDelete() {
-      this.dialogDelete = false
+      this.dialogDelete = false;
       this.$nextTick(() => {
-        this.editedItem = { ...this.defaultItem }
-        this.editedIndex = -1
-      })
+        this.editedItem = null;
+        this.editedIndex = -1;
+      });
     },
 
-    save() {
-      if (this.editedIndex > -1) {
-        Object.assign(this.aboutItems[this.editedIndex], this.editedItem)
-      } else {
-        this.aboutItems.push({ ...this.editedItem })
+    async save() {
+      this.formError = "";
+      this.saving = true;
+      try {
+        const payload = this.toApiPayload(this.form);
+
+        if (this.editedIndex > -1 && this.editedItem) {
+          // Update existing - backend has no :id on PUT, it always
+          // targets the single existing record.
+          await axios.put(API_URL, payload, { headers: authHeaders() });
+          const updated = { ...this.editedItem, ...this.form };
+          Object.assign(this.aboutItems[this.editedIndex], updated);
+        } else {
+          // Create new - backend rejects this with 409 if a record
+          // already exists, since only one is allowed.
+          const { data } = await axios.post(API_URL, payload, { headers: authHeaders() });
+          this.aboutItems.push(this.fromApi(data.data));
+        }
+
+        this.close();
+      } catch (err) {
+        console.error("Failed to save contact:", err);
+        if (err.response?.status === 409) {
+          this.formError = "ມີຂໍ້ມູນຢູ່ແລ້ວ, ກະລຸນາໃຊ້ການແກ້ໄຂແທນການເພີ່ມ";
+        } else {
+          this.formError =
+            err.response?.data?.message || "ບໍ່ສາມາດບັນທຶກຂໍ້ມູນໄດ້, ກະລຸນາລອງໃໝ່";
+        }
+      } finally {
+        this.saving = false;
       }
-      this.close()
     },
   },
-}
+};
 </script>
 
 <style scoped>

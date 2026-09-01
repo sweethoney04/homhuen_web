@@ -22,10 +22,15 @@
         :headers="headers"
         :items="contacts"
         :search="search"
+        :loading="loading"
         class="contact-table"
       >
         <template v-slot:item.no="{ item }">
           {{ contacts.indexOf(item) + 1 }}
+        </template>
+
+        <template v-slot:item.create_date="{ item }">
+          {{ formatDate(item.create_date) }}
         </template>
 
         <template v-slot:item.delete="{ item }">
@@ -55,76 +60,112 @@
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-btn text @click="closeDelete">Cancel</v-btn>
-          <v-btn color="error" text @click="deleteItemConfirm">OK</v-btn>
+          <v-btn color="error" text :loading="deleting" @click="deleteItemConfirm">OK</v-btn>
           <v-spacer></v-spacer>
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
+      {{ snackbar.text }}
+    </v-snackbar>
   </div>
 </template>
 
 <script>
+import axios from "axios"; // or: import { axiosInstance } from '@/plugins/axios'
+
+// Adjust to match how the rest of the app talks to the API.
+const API_BASE = process.env.VUE_APP_API_BASE_URL || "http://localhost:3000/api";
+
 export default {
   data: () => ({
-    search: '',
+    search: "",
     dialogDelete: false,
+    loading: false,
+    deleting: false,
     headers: [
-      { text: 'ລຳດັບ', value: 'no', sortable: false, width: '70' },
-      { text: 'ຊື່ລູກຄ້າ', value: 'customerName', sortable: false },
-      { text: 'ເບີໂທ', value: 'phoneNumber', sortable: false },
-      { text: 'ຫົວຂໍ້', value: 'topic', sortable: false },
-      { text: 'ລາຍລະອຽດ', value: 'details', sortable: false },
-      { text: 'ລົບ', value: 'delete', sortable: false, align: 'center' },
+      { text: "ລຳດັບ", value: "no", sortable: false, width: "70" },
+      { text: "ຊື່ລູກຄ້າ", value: "name", sortable: false },
+      { text: "ເບີໂທ", value: "phone", sortable: false },
+      { text: "ຫົວຂໍ້", value: "topic", sortable: false },
+      { text: "ລາຍລະອຽດ", value: "detail", sortable: false },
+      { text: "ວັນທີ", value: "create_date", sortable: true },
+      { text: "ລົບ", value: "delete", sortable: false, align: "center" },
     ],
     contacts: [],
     editedIndex: -1,
     editedItem: null,
+    snackbar: { show: false, text: "", color: "success" },
   }),
 
   created() {
-    this.initialize()
+    this.initialize();
   },
 
   methods: {
-    initialize() {
-      // Replace this with API call later:
-      // const { data } = await this.$axios.get('/customer-contacts')
-      // this.contacts = data
+    authHeaders() {
+      // Adjust to however the app stores the auth token (Vuex, localStorage, etc.)
+      const token = localStorage.getItem("token");
+      return token ? { Authorization: `Bearer ${token}` } : {};
+    },
 
-      this.contacts = [
-        {
-          customerName: 'ນາງ ສຸລິຍະ',
-          phoneNumber: '020 123 4567',
-          topic: 'ສອບຖາມ',
-          details: 'ລາຄາເທົ່າໃດ',
-        },
-        {
-          customerName: 'ທ່ານ ສົມສະຫຼີ',
-          phoneNumber: '020 987 6543',
-          topic: 'ສອບຖາມ',
-          details: 'ຜ່ອນເລີ່ມຕົ້ນເທົ່າໃດ?',
-        },
-      ]
+    async initialize() {
+      this.loading = true;
+      try {
+        const { data } = await axios.get(`${API_BASE}/admin/contact-messages`, {
+          headers: this.authHeaders(),
+        });
+        this.contacts = data.data;
+      } catch (err) {
+        this.notify("ໂຫລດຂໍ້ມູນບໍ່ສຳເລັດ", "error");
+        console.error(err);
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    formatDate(value) {
+      if (!value) return "";
+      const d = new Date(value);
+      return isNaN(d) ? value : d.toLocaleString("lo-LA");
     },
 
     deleteItem(item) {
-      this.editedIndex = this.contacts.indexOf(item)
-      this.editedItem = Object.assign({}, item)
-      this.dialogDelete = true
+      this.editedIndex = this.contacts.indexOf(item);
+      this.editedItem = Object.assign({}, item);
+      this.dialogDelete = true;
     },
 
-    deleteItemConfirm() {
-      this.contacts.splice(this.editedIndex, 1)
-      this.closeDelete()
+    async deleteItemConfirm() {
+      this.deleting = true;
+      try {
+        await axios.delete(
+          `${API_BASE}/admin/contact-messages/${this.editedItem.id}`,
+          { headers: this.authHeaders() }
+        );
+        this.contacts.splice(this.editedIndex, 1);
+        this.notify("ລົບຂໍ້ມູນສຳເລັດ", "success");
+      } catch (err) {
+        this.notify("ລົບຂໍ້ມູນບໍ່ສຳເລັດ", "error");
+        console.error(err);
+      } finally {
+        this.deleting = false;
+        this.closeDelete();
+      }
     },
 
     closeDelete() {
-      this.dialogDelete = false
-      this.editedItem = null
-      this.editedIndex = -1
+      this.dialogDelete = false;
+      this.editedItem = null;
+      this.editedIndex = -1;
+    },
+
+    notify(text, color) {
+      this.snackbar = { show: true, text, color };
     },
   },
-}
+};
 </script>
 
 <style scoped>

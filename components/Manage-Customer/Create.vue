@@ -12,7 +12,7 @@
         class="white--text d-flex justify-space-between align-center px-6 py-3"
         style="background-color: #064d8d"
       >
-        <span class="text-subtitle-1 font-weight-medium">ລາຍລະອຽດຂໍ້ມູນລູກຄ້າ</span>
+        <span class="text-subtitle-1 font-weight-medium"><div>ລາຍລະອຽດຂໍ້ມູນລູກຄ້າ</div></span>
         <v-btn icon dark small @click="close">
           <v-icon size="18">mdi-close</v-icon>
         </v-btn>
@@ -20,7 +20,7 @@
 
       <!-- Form Content -->
       <v-card-text class="pt-4 px-6">
-        <div class="text-subtitle-2 font-weight-bold mb-2 primary-text">ຂໍ້ມູນລູກຄ້າ</div>
+        <div class="text-subtitle-2 font-weight-bold mb-2 primary-text"><div>ຂໍ້ມູນລູກຄ້າ</div></div>
 
         <v-container class="pa-0">
           <v-row dense>

@@ -10,8 +10,9 @@
   <!-- Header Bar -->
   <v-card-title class="d-flex justify-space-between align-center px-6 pt-4 pb-2">
     <div>
-      <div class="text-h6 font-weight-bold">ເພີ່ມສັນຍາໃໝ່</div>
-      <div class="text-caption grey--text">ຕື່ມຂໍ້ມູນສັນຍາໃຫ້ຄົບຖ້ວນ</div>
+      <div class="text-h6 font-weight-bold">
+        <div>ເພີ່ມສັນຍາໃໝ່</div></div>
+      <div class="text-caption grey--text"><div>ຕື່ມຂໍ້ມູນສັນຍາໃຫ້ຄົບຖ້ວນ</div></div>
     </div>
     <v-btn icon small @click="close">
       <v-icon size="18">mdi-close</v-icon>
@@ -26,7 +27,9 @@
       <v-row dense>
         <!-- SECTION 1: ເລືອກຫ້ອງແຖວ -->
         <v-col cols="12">
-          <div class="text-subtitle-2 font-weight-bold primary-text">1. ເລືອກຫ້ອງແຖວ</div>
+          <div class="text-subtitle-2 font-weight-bold primary-text">
+            <div>1. ເລືອກຫ້ອງແຖວ </div>
+          </div>
         </v-col>
 
         <v-col cols="12" sm="6" class="pr-sm-2">
@@ -58,6 +61,7 @@
           <div class="field-label">ຄ່າເຊົ່າຕໍ່ເດືອນ</div>
           <v-text-field
             v-model="form.pricePerMonth"
+            @input="formatPrice('pricePerMonth', $event)"
             dense
             outlined
             hide-details
@@ -72,7 +76,9 @@
 
         <!-- SECTION 2: ຂໍ້ມູນຜູ້ເຊົ່າ -->
         <v-col cols="12">
-          <div class="text-subtitle-2 font-weight-bold primary-text">2. ຂໍ້ມູນຜູ້ເຊົ່າ</div>
+          <div class="text-subtitle-2 font-weight-bold primary-text">
+            <div>2. ຂໍ້ມູນຜູ້ເຊົ່າ</div>
+          </div>
         </v-col>
 
         <v-col cols="12" sm="6" class="pr-sm-2">
@@ -156,7 +162,9 @@
 
         <!-- SECTION 3: ໄລຍະສັນຍາ ແລະ ຄ່າເຊົ່າ -->
         <v-col cols="12">
-          <div class="text-subtitle-2 font-weight-bold primary-text">3. ໄລຍະສັນຍາ ແລະ ຄ່າເຊົ່າ</div>
+          <div class="text-subtitle-2 font-weight-bold primary-text">
+            <div>3. ໄລຍະສັນຍາ ແລະ ຄ່າເຊົ່າ</div>
+          </div>
         </v-col>
 
         <v-col cols="12" sm="6" class="pr-sm-2">
@@ -189,6 +197,7 @@
           <div class="field-label">ເງິນມັດຈຳ</div>
           <v-text-field
             v-model="form.deposit"
+            @input="formatPrice('deposit', $event)"
             dense
             outlined
             hide-details
@@ -265,6 +274,10 @@ export default {
     };
   },
   methods: {
+    formatPrice(field, value) {
+      const digits = String(value || '').replace(/\D/g, '')
+      this.form[field] = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    },
     emptyForm() {
       return {
         roomName: '',
@@ -298,7 +311,7 @@ export default {
         room: this.form.roomName.trim(),
         lessee: `${this.form.firstName.trim()} ${this.form.lastName.trim()}`.trim(),
         leaseContract: `LC-${Date.now()}`,
-        payment: Number(this.form.pricePerMonth) || 0,
+        payment: Number(this.form.pricePerMonth.replace(/,/g, '')) || 0,
         details: this.form.note || `${this.form.dateStart} - ${this.form.dateEnd}`,
         ...this.form,
       })
