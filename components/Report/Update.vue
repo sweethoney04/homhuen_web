@@ -11,16 +11,19 @@
         <!-- Section: Tenant info -->
         <p class="section-label">ຂໍ້ມູນຜູ້ເຊົ່າ</p>
 
-        <div class="field">
-          <label class="field-label">ຊື່ ແລະ ນາມສະກຸນ</label>
-          <div class="input-wrap">
-            <v-icon class="input-icon" size="18">mdi-account</v-icon>
-            <input
-              v-model="form.fullName"
-              type="text"
-              placeholder="ຊື່ ແລະ ນາມສະກຸນ"
-              required
-            />
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">ຊື່</label>
+            <div class="input-wrap">
+              <v-icon class="input-icon" size="18">mdi-account</v-icon>
+              <input v-model="form.name" type="text" placeholder="ຊື່" required />
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label">ນາມສະກຸນ</label>
+            <div class="input-wrap">
+              <input v-model="form.lastname" type="text" placeholder="ນາມສະກຸນ" required />
+            </div>
           </div>
         </div>
 
@@ -30,7 +33,7 @@
             <div class="input-wrap">
               <v-icon class="input-icon" size="18">mdi-phone</v-icon>   
               <input
-                v-model="form.phone"
+                v-model="form.tel"
                 type="tel"
                 placeholder="ເບີໂທ"
                 required
@@ -38,40 +41,6 @@
             </div>
           </div>
 
-          <div class="field">
-            <label class="field-label">ເພດ</label>
-            <div class="input-wrap">
-              <select v-model="form.gender" required>
-                <option value="" disabled>ເພດ</option>
-                <option value="male">ຊາຍ</option>
-                <option value="female">ຍິງ</option>
-                <option value="other">ອື່ນໆ</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div class="field-row">
-          <div class="field">
-            <label class="field-label">ເລກບັດປະຈຳຕົວ</label>
-            <div class="input-wrap">
-              <v-icon class="input-icon" size="18">mdi-card-account-details</v-icon>
-              <input
-                v-model="form.idCardNumber"
-                type="text"
-                placeholder="ເລກບັດປະຈຳຕົວ"
-                required
-              />
-            </div>
-          </div>
-
-          <div class="field">
-            <label class="field-label">ວັນເດືອນປີເກີດ</label>
-            <div class="input-wrap">
-              <v-icon class="input-icon" size="18">mdi-calendar</v-icon>
-              <input v-model="form.birthDate" type="date" required />
-            </div>
-          </div>
         </div>
 
         <!-- Section: Contract period -->
@@ -111,70 +80,48 @@
   </div>
 </template>
 
-<script setup>
-import { reactive, ref, watch } from "vue";
-
-const props = defineProps({
-  visible: { type: Boolean, default: false },
-  roomLabel: { type: String, default: "" }, // e.g. "ຫ້ອງ A01"
-  tenant: {
-    type: Object,
-    default: () => ({
-      fullName: "",
-      phone: "",
-      gender: "",
-      idCardNumber: "",
-      birthDate: "",
-      startDate: "",
-      endDate: "",
-    }),
+<script>
+export default {
+  name: 'ReportUpdate',
+  props: {
+    visible: { type: Boolean, default: false },
+    roomLabel: { type: String, default: '' },
+    tenant: { type: Object, default: () => ({}) },
   },
-});
-
-const emit = defineEmits(["close", "save"]);
-
-const saving = ref(false);
-
-const form = reactive({
-  fullName: "",
-  phone: "",
-  gender: "",
-  idCardNumber: "",
-  birthDate: "",
-  startDate: "",
-  endDate: "",
-});
-
-// keep form in sync whenever a different tenant record is passed in
-watch(
-  () => props.tenant,
-  (newVal) => {
-    Object.assign(form, {
-      fullName: newVal?.fullName ?? "",
-      phone: newVal?.phone ?? "",
-      gender: newVal?.gender ?? "",
-      idCardNumber: newVal?.idCardNumber ?? "",
-      birthDate: newVal?.birthDate ?? "",
-      startDate: newVal?.startDate ?? "",
-      endDate: newVal?.endDate ?? "",
-    });
+  data() {
+    return {
+      saving: false,
+      form: { name: '', lastname: '', tel: '', startDate: '', endDate: '' },
+    }
   },
-  { immediate: true, deep: true }
-);
-
-function handleClose() {
-  emit("close");
-}
-
-async function handleSave() {
-  saving.value = true;
-  try {
-    // Replace with your real API call, e.g.:
-    // await api.put(`/contracts/${props.tenant.id}`, { ...form })
-    emit("save", { ...form });
-  } finally {
-    saving.value = false;
-  }
+  watch: {
+    tenant: {
+      immediate: true,
+      deep: true,
+      handler(value) {
+        this.form = {
+          name: value.name || '',
+          lastname: value.lastname || '',
+          tel: value.tel || value.phone || '',
+          startDate: value.startDate || '',
+          endDate: value.endDate || '',
+        }
+      },
+    },
+  },
+  methods: {
+    handleClose() {
+      this.$emit('close')
+    },
+    async handleSave() {
+      this.saving = true
+      try {
+        this.$emit('save', { ...this.form })
+      } finally {
+        this.saving = false
+      }
+    },
+  },
 }
 </script>
 

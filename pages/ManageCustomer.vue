@@ -80,20 +80,25 @@ export default {
       this.errorMessage = ''
 
       try {
-        const { data } = await this.$axios.get('/customers')
-        this.customers = Array.isArray(data)
-          ? data
-          : data.data || data.customers || []
+        const { data } = await this.$axios.get('/admin/customers')
+        this.customers = data.data || []
       } catch (error) {
         this.errorMessage = 'ບໍ່ສາມາດໂຫລດຂໍ້ມູນລູກຄ້າໄດ້'
-        console.error('GET /customers error:', error)
+        console.error('GET /admin/customers error:', error)
       } finally {
         this.loading = false
       }
     },
 
-    addCustomer(item) {
-      this.customers.push({ id: Date.now(), ...item })
+    async addCustomer(item) {
+      this.errorMessage = ''
+      try {
+        await this.$axios.post('/admin/customers', item)
+        this.initialize()
+      } catch (error) {
+        this.errorMessage = 'ບໍ່ສາມາດເພີ່ມຂໍ້ມູນລູກຄ້າໄດ້'
+        console.error('POST /admin/customers error:', error)
+      }
     },
 
     openEdit(item) {
@@ -102,16 +107,15 @@ export default {
     },
 
     async updateCustomer(item) {
-      const index = this.customers.findIndex((c) => c.id === item.id)
-      if (index === -1 || !item.id) return
+      if (!item.id) return
+      this.errorMessage = ''
 
       try {
-        const { data } = await this.$axios.put(`/customers/${item.id}`, item)
-        const updatedCustomer = data.data || data.customer || data
-        this.customers.splice(index, 1, updatedCustomer)
+        await this.$axios.put(`/admin/customers/${item.id}`, item)
+        this.initialize()
       } catch (error) {
         this.errorMessage = 'ບໍ່ສາມາດແກ້ໄຂຂໍ້ມູນລູກຄ້າໄດ້'
-        console.error('PUT /customers/:id error:', error)
+        console.error('PUT /admin/customers/:id error:', error)
       }
     },
 
@@ -121,15 +125,16 @@ export default {
     },
 
     async removeCustomer(item) {
-      const index = this.customers.findIndex((c) => c.id === item.id)
-      if (index === -1 || !item.id) return
+      if (!item.id) return
+      this.errorMessage = ''
 
       try {
-        await this.$axios.delete(`/customers/${item.id}`)
-        this.customers.splice(index, 1)
+        await this.$axios.delete(`/admin/customers/${item.id}`)
+        const index = this.customers.findIndex((c) => c.id === item.id)
+        if (index !== -1) this.customers.splice(index, 1)
       } catch (error) {
         this.errorMessage = 'ບໍ່ສາມາດລົບຂໍ້ມູນລູກຄ້າໄດ້'
-        console.error('DELETE /customers/:id error:', error)
+        console.error('DELETE /admin/customers/:id error:', error)
       }
     },
   },

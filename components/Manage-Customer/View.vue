@@ -17,7 +17,7 @@
         small
         label
       >
-        {{ item.status }}
+        {{ statusText(item.status) }}
       </v-chip>
     </template>
 
@@ -59,23 +59,30 @@ export default {
   data: () => ({
     headers: [
       { text: 'ລຳດັບ', value: 'no', sortable: false, width: '70' },
-      { text: 'ຊື່ລູກຄ້າ', value: 'customerName' },
-      { text: 'ເບີໂທ', value: 'phoneNumber', sortable: false },
-      { text: 'ຫ້ອງທີ່ສົນໃຈ', value: 'roomInterested' },
+      { text: 'ຊື່ລູກຄ້າ', value: 'name' },
+      { text: 'ເບີໂທ', value: 'phone', sortable: false },
+      { text: 'ຫ້ອງທີ່ສົນໃຈ', value: 'room_interest' },
       { text: 'ຊ່ອງທາງທີ່ຕິດຕໍ່ເຂົ້າມາ', value: 'channel', sortable: false },
-      { text: 'ທີ່ຕິດຕໍ່ຄັ້ງທຳອິດ', value: 'firstContactDate' },
-      { text: 'ນັດໝາຍຄັ້ງຕໍ່ໄປ', value: 'nextAppointmentDate' },
-      { text: 'ຜູ້ຮັບຜິດຊອບ', value: 'responsible' },
-      { text: 'ສະຖານະ', value: 'status' },
+      { text: 'ທີ່ຕິດຕໍ່ຄັ້ງທຳອິດ', value: 'first_contact' },
+      { text: 'ນັດໝາຍຄັ້ງຕໍ່ໄປ', value: 'next_appointment' },
+      { text: 'ຜູ້ຮັບຜິດຊອບ', value: 'assigned_to' },
+      { text: 'ສະຖານະ', value: 'status', sortable: false },
       { text: 'ແກ້ໄຂ', value: 'edit', sortable: false, align: 'center' },
-      { text: 'ລິບ', value: 'delete', sortable: false, align: 'center' },
+      { text: 'ລົບ', value: 'delete', sortable: false, align: 'center' },
     ],
   }),
   methods: {
     statusColor(status) {
-      if (status === 'ກຳລັງຕິດຕໍ່') return 'success'
-      if (status === 'ປິດການຂາຍແລ້ວ') return 'amber darken-2'
-      return 'primary'
+      if (Number(status) === 0) return 'success'
+      if (Number(status) === 1) return 'primary'
+      if (Number(status) === 2) return 'amber darken-2'
+      return 'grey'
+    },
+    statusText(status) {
+      if (Number(status) === 0) return 'ກຳລັງຕິດຕໍ່'
+      if (Number(status) === 1) return 'ໃໝ່'
+      if (Number(status) === 2) return 'ປິດການຂາຍແລ້ວ'
+      return 'ບໍ່ລະບຸ'
     },
   },
 }

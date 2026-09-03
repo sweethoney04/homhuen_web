@@ -18,7 +18,7 @@
         <v-spacer></v-spacer>
 
         <v-col cols="auto">
-          <ReportCreate @created="addReport"></ReportCreate>
+          <ReportCreate @created="handleCreated"></ReportCreate>
         </v-col>
       </v-row>
 
@@ -26,23 +26,39 @@
         :headers="headers"
         :items="reports"
         :search="search"
+        :loading="loading"
         class="report-table"
       >
         <template v-slot:item.no="{ item }">
           {{ reports.indexOf(item) + 1 }}
         </template>
 
+        <!-- backend only gives status 0/1, tenant name comes from a separate call -->
+        <template v-slot:item.lessee="{ item }">
+          {{ item.lessee || '-' }}
+        </template>
+
+        <template v-slot:item.leaseTime="{ item }">
+          {{ item.leaseTime || '-' }}
+        </template>
+
+        <template v-slot:item.overdue="{ item }">
+          <span :class="{ 'red--text font-weight-bold': item.overdue > 0 }">
+            {{ item.overdue > 0 ? `ຄ້າງ ${item.overdue} ເດືອນ` : 'ບໍ່ຄ້າງ' }}
+          </span>
+        </template>
+
         <template v-slot:item.payment="{ item }">
           <v-chip
-            v-if="isPaymentStatus(item.payment)"
-            :color="item.payment === 'Paid' ? 'success' : 'error'"
+            :color="item.status === 1 ? 'success' : 'error'"
             text-color="white"
             small
             label
+            style="cursor: pointer"
+            @click="togglePaid(item)"
           >
-            {{ item.payment }}
+            {{ item.status === 1 ? 'Paid' : 'Unpaid' }}
           </v-chip>
-          <span v-else>{{ formatCurrency(item.payment) }}</span>
         </template>
 
         <template v-slot:item.details="{ item }">
@@ -91,10 +107,16 @@
 
     <ReportUpdate
       :visible="editVisible"
-      :room-label="selectedReport.room || ''"
+      :room-label="selectedReport.name || ''"
       :tenant="selectedReport"
       @close="editVisible = false"
       @save="saveReport"
+    />
+
+    <ReportView
+      :visible="viewVisible"
+      :bill="selectedBill"
+      @close="viewVisible = false"
     />
 
     <!-- ຄິດໄລ່ຄ່າເຊົ່າ -->
@@ -106,7 +128,7 @@
             <v-icon small>mdi-close</v-icon>
           </v-btn>
         </div>
-        <p class="calc-room">ຫ້ອງເລກທີ {{ calcForm.room }}</p>
+        <p class="calc-room">ຫ້ອງເລກທີ {{ calcForm.name }}</p>
 
         <v-card-text class="calc-body">
           <div class="calc-list-header">
@@ -122,11 +144,9 @@
             <span class="calc-line-label">{{ line.label }}</span>
             <div class="calc-line-input">
               <input
-                :value="formatAmount(calcForm[line.key])"
-                type="text"
+                v-model.number="calcForm[line.key]"
+                type="number"
                 min="0"
-                inputmode="numeric"
-                @input="onCalcInput(line.key, $event.target.value)"
               />
               <span class="calc-unit">LAK</span>
             </div>
@@ -143,7 +163,7 @@
             <v-icon small left>mdi-printer</v-icon>
             ພິມ
           </v-btn>
-          <v-btn color="#064D8D" dark class="save-bill-btn" @click="saveCalculation">
+          <v-btn color="primary" class="save-bill-btn" :loading="savingBill" @click="saveCalculation">
             ບັນທຶກໃບບິນ
           </v-btn>
         </v-card-actions>
@@ -155,154 +175,312 @@
 <script>
 import ReportCreate from '~/components/Report/Create.vue'
 import ReportUpdate from '~/components/Report/Update.vue'
+import ReportView from '~/components/Report/View.vue'
+
+// Adjust this if your project already has a configured axios instance
+// (this.$axios via @nuxtjs/axios) or a wrapped api client.
+const API_BASE = '/admin/report'
+const FETCH_API_BASE = '/api/admin/report'
 
 export default {
   name: 'ReportSellPage',
   components: {
     ReportCreate,
     ReportUpdate,
+    ReportView,
   },
   data() {
     return {
       search: '',
+      loading: false,
       headers: [
         { text: 'ລຳດັບ', value: 'no', sortable: false, width: '70' },
-        { text: 'ຫ້ອງ', value: 'room', sortable: false },
+        { text: 'ຫ້ອງ', value: 'name', sortable: false },
         { text: 'ຜູ້ເຊົ່າ', value: 'lessee', sortable: false },
-        { text: 'ສັນຍານເຊົ່າ', value: 'leaseContract', sortable: false },
+        { text: 'ໄລຍະສັນຍາ', value: 'leaseTime', sortable: false },
+        { text: 'ຄ້າງຊຳລະ', value: 'overdue', sortable: false },
         { text: 'ຊຳລະ', value: 'payment', sortable: false },
         { text: 'ລາຍລະອຽດ', value: 'details', sortable: false, align: 'center', width: '130' },
         { text: 'ຈັດການ', value: 'manage', sortable: false, align: 'center', width: '80' },
         { text: 'ຄິດໄລ່', value: 'calculate', sortable: false, align: 'center', width: '90' },
       ],
-      reports: [
-        {
-          room: 'A101',
-          lessee: 'ນາງ ສຸລິຍະ',
-          leaseContract: 'LC-001',
-          payment: 'Paid',
-          details: 'ເຊົ່າ 1 ອາທິດ',
-          roomRent: 1500000,
-          waterFee: 0,
-          electricityFee: 0,
-          garbageFee: 0,
-          total: null,
-        },
-        {
-          room: 'A102',
-          lessee: 'ທ່ານ ສົມສະຫຼີ',
-          leaseContract: 'LC-002',
-          payment: 'Unpaid',
-          details: 'ເຊົ່າ 2 ອາທິດ',
-          roomRent: 1500000,
-          waterFee: 0,
-          electricityFee: 0,
-          garbageFee: 0,
-          total: null,
-        },
-      ],
+      // Populated from GET /api/admin/report/unpaid, one row per room:
+      // { roomId, name, leaseTime, overdue, status, lessee }
+      reports: [],
+
       editVisible: false,
       selectedReport: {},
       selectedIndex: -1,
 
+      viewVisible: false,
+      selectedBill: {},
+
       // --- calculation dialog state ---
       calcDialog: false,
-      calcIndex: -1,
+      calcRoomId: null,
+      savingBill: false,
       calcForm: {
-        room: '',
-        roomRent: 0,
-        waterFee: 0,
-        electricityFee: 0,
-        garbageFee: 0,
+        name: '',
+        roomPrice: 0,
+        waterPrice: 0,
+        electricityPrice: 0,
+        wasteFees: 0,
       },
 
-      // Labels shown in the bill's "ລາຍການ" list — order matches the mockup
+      // Field names now match the backend's bill payload
+      // (roomPrice, electricityPrice, waterPrice, wasteFees)
       calcLineItems: [
-        { key: 'roomRent', label: 'ຄ່າຫ້ອງເຊົ່າ' },
-        { key: 'waterFee', label: 'ຄ່ານ້ຳ' },
-        { key: 'electricityFee', label: 'ຄ່າໄຟ' },
-        { key: 'garbageFee', label: 'ຄ່າຂີ້ເຫຍື້ອ' },
+        { key: 'roomPrice', label: 'ຄ່າຫ້ອງເຊົ່າ' },
+        { key: 'waterPrice', label: 'ຄ່ານ້ຳ' },
+        { key: 'electricityPrice', label: 'ຄ່າໄຟ' },
+        { key: 'wasteFees', label: 'ຄ່າຂີ້ເຫຍື້ອ' },
       ],
     }
   },
   computed: {
-    // Central formula — change here if your real calculation differs
-    // (e.g. add a service fee or late-payment penalty).
     calcTotal() {
       return this.calcLineItems.reduce((sum, line) => {
-        const rawValue = String(this.calcForm[line.key] ?? '0').replace(/,/g, '')
-        return sum + (Number(rawValue) || 0)
+        return sum + (Number(this.calcForm[line.key]) || 0)
       }, 0)
     },
   },
+  created() {
+    this.fetchReports()
+  },
   methods: {
-    formatAmount(value) {
-      if (value === null || value === undefined || value === '') return ''
-      const numeric = Number(String(value).replace(/,/g, ''))
-      if (Number.isNaN(numeric)) return ''
-      return numeric.toLocaleString()
-    },
-
-    onCalcInput(key, value) {
-      const digits = String(value || '').replace(/[^\d]/g, '')
-      this.$set(this.calcForm, key, digits ? Number(digits).toLocaleString() : '')
-    },
-
     formatCurrency(value) {
       return `${Number(value || 0).toLocaleString()} ₭`
     },
 
-    isPaymentStatus(value) {
-      return value === 'Paid' || value === 'Unpaid'
-    },
+    // GET /api/admin/report/unpaid -> { roomId, name, leaseTime, overdue, status }
+    // Tenant name isn't included in this endpoint, so we enrich each row
+    // with a follow-up call to /rooms/:id/info.
+    async fetchReports() {
+      this.loading = true
+      try {
+        const { data } = await this.$axios.$get
+          ? { data: await this.$axios.$get(`${API_BASE}/unpaid`) }
+          : { data: await (await fetch(`${FETCH_API_BASE}/unpaid`)).json() }
 
-    addReport(report) {
-      this.reports.push(report)
-    },
+        const rows = data.data || []
 
-    viewDetail(item) {
-      item.showDetails = true
-    },
+        const enriched = await Promise.all(
+          rows.map(async (row) => {
+            let lessee = ''
+            try {
+              const info = await this.fetchRoomInfo(row.roomId)
+              if (info && info.tenant) {
+                lessee = `${info.tenant.name || ''} ${info.tenant.lastname || ''}`.trim()
+              }
+            } catch (e) {
+              // no tenant assigned yet, or info lookup failed - leave blank
+            }
+            return { ...row, lessee }
+          })
+        )
 
-    openManage(item) {
-      this.selectedIndex = this.reports.indexOf(item)
-      this.selectedReport = { ...item }
-      this.editVisible = true
-    },
-
-    saveReport(report) {
-      if (this.selectedIndex > -1) {
-        Object.assign(this.reports[this.selectedIndex], report)
+        this.reports = enriched
+      } catch (err) {
+        console.error('Failed to load report list', err)
+      } finally {
+        this.loading = false
       }
-      this.editVisible = false
-      this.selectedIndex = -1
+    },
+
+    async fetchRoomInfo(roomId) {
+      const res = this.$axios.$get
+        ? await this.$axios.$get(`${API_BASE}/rooms/${roomId}/info`)
+        : await (await fetch(`${FETCH_API_BASE}/rooms/${roomId}/info`)).json()
+      return res.data
+    },
+
+    // PUT /api/admin/report/rooms/:id/status  { status: 0 | 1 }
+    // Note: flipping Not paid -> Paid resets the bill price detail server-side.
+    async togglePaid(item) {
+      const newStatus = item.status === 1 ? 0 : 1
+      try {
+        if (this.$axios.$put) {
+          await this.$axios.$put(`${API_BASE}/rooms/${item.roomId}/status`, {
+            status: newStatus,
+          })
+        } else {
+          await fetch(`${FETCH_API_BASE}/rooms/${item.roomId}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus }),
+          })
+        }
+        item.status = newStatus
+        if (newStatus === 1) item.overdue = 0
+      } catch (err) {
+        console.error('Failed to update status', err)
+      }
+    },
+
+    handleCreated(payload = {}) {
+      // const normalized = {
+      //   roomId: payload.roomId || payload.id || Date.now(),
+      //   name: payload.name || payload.room || payload.roomName || 'Unknown room',
+      //   lessee: payload.lessee || [payload.firstName, payload.lastName].filter(Boolean).join(' ') || '-',
+      //   leaseTime: payload.leaseTime || [payload.dateStart, payload.dateEnd].filter(Boolean).join(' - ') || '—',
+      //   overdue: Number(payload.overdue || 0),
+      //   status: Number(payload.status ?? 0),
+      //   roomPrice: Number(payload.roomPrice ?? payload.payment ?? 0),
+      //   waterPrice: Number(payload.waterPrice || 0),
+      //   electricityPrice: Number(payload.electricityPrice || 0),
+      //   wasteFees: Number(payload.wasteFees || 0),
+      //   total: Number(payload.total ?? payload.roomPrice ?? payload.payment ?? 0),
+      //   ...payload,
+      // }
+
+      // const exists = this.reports.some(
+      //   (row) =>
+      //     row.roomId === normalized.roomId ||
+      //     (row.name === normalized.name && row.lessee === normalized.lessee)
+      // )
+
+      // if (!exists) {
+      //   this.reports = [normalized, ...this.reports]
+      // }
+
+      this.fetchReports()
+    },
+
+    async viewDetail(item) {
+      try {
+        const info = await this.fetchRoomInfo(item.roomId)
+        const tenant = info?.tenant || {}
+        const priceDetail = info?.priceDetail || {}
+
+        this.selectedBill = {
+          room: info?.roomName || info?.name || item.name || item.roomId,
+          status: info?.status ?? item.status ?? 0,
+          tenantName: tenant.name
+            ? `${tenant.name} ${tenant.lastname || ''}`.trim()
+            : info?.tenantName || '-',
+          phone: tenant.tel || tenant.phone || info?.phone || '-',
+          roomPrice: priceDetail.roomPrice ?? priceDetail.roomRent ?? 0,
+          waterPrice: priceDetail.waterPrice ?? 0,
+          electricityPrice: priceDetail.electricityPrice ?? 0,
+          wasteFees: priceDetail.wasteFees ?? 0,
+          total: info?.total ?? priceDetail.total ?? 0,
+        }
+
+        this.viewVisible = true
+      } catch (err) {
+        console.error('Failed to load room info', err)
+      }
+    },
+
+    async openManage(item) {
+      this.selectedIndex = this.reports.indexOf(item)
+      try {
+        const info = await this.fetchRoomInfo(item.roomId)
+        const tenant = info.tenant || {}
+        this.selectedReport = {
+          ...item,
+          name: tenant.name || '',
+          lastname: tenant.lastname || '',
+          tel: tenant.phone || '',
+          startDate: info.startDate || '',
+          endDate: info.endDate || '',
+        }
+        this.editVisible = true
+      } catch (err) {
+        console.error('Failed to load tenant/lease details', err)
+      }
+    },
+
+    // ReportUpdate should emit { name, lastname, tel, link, startDate, endDate }
+    // Uses POST for new tenant/lease records and PUT for existing records.
+    async saveReport(payload) {
+      const item = this.reports[this.selectedIndex]
+      if (!item) return
+
+      try {
+        const tenantBody = {
+          name: payload.name,
+          lastname: payload.lastname,
+          tel: payload.tel,
+          link: payload.link,
+        }
+        const leaseBody = {
+          startDate: payload.startDate,
+          endDate: payload.endDate,
+        }
+
+        const info = await this.fetchRoomInfo(item.roomId)
+        await this.request(info.tenant ? 'put' : 'post', `${API_BASE}/rooms/${item.roomId}/tenant`, tenantBody)
+        await this.request(info.startDate ? 'put' : 'post', `${API_BASE}/rooms/${item.roomId}/lease`, leaseBody)
+
+        await this.fetchReports()
+      } catch (err) {
+        console.error('Failed to save tenant/lease', err)
+      } finally {
+        this.editVisible = false
+        this.selectedIndex = -1
+      }
     },
 
     calculate(item) {
-      this.calcIndex = this.reports.indexOf(item)
+      this.calcRoomId = item.roomId
       this.calcForm = {
-        room: item.room,
-        roomRent: item.roomRent || 0,
-        waterFee: item.waterFee || 0,
-        electricityFee: item.electricityFee || 0,
-        garbageFee: item.garbageFee || 0,
+        name: item.name,
+        roomPrice: item.roomPrice || 0,
+        waterPrice: item.waterPrice || 0,
+        electricityPrice: item.electricityPrice || 0,
+        wasteFees: item.wasteFees || 0,
       }
       this.calcDialog = true
     },
 
-    saveCalculation() {
-      if (this.calcIndex > -1) {
-        Object.assign(this.reports[this.calcIndex], {
-          roomRent: Number(String(this.calcForm.roomRent || '0').replace(/,/g, '')),
-          waterFee: Number(String(this.calcForm.waterFee || '0').replace(/,/g, '')),
-          electricityFee: Number(String(this.calcForm.electricityFee || '0').replace(/,/g, '')),
-          garbageFee: Number(String(this.calcForm.garbageFee || '0').replace(/,/g, '')),
-          total: this.calcTotal,
-          calculated: true,
-        })
+    async request(method, url, body) {
+      const axiosMethod = this.$axios[`$${method}`]
+      if (axiosMethod) return axiosMethod.call(this.$axios, url, body)
+      return fetch(url.replace(API_BASE, FETCH_API_BASE), {
+        method: method.toUpperCase(),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+    },
+
+    // POST /api/admin/report/rooms/:id/bill
+    // { roomPrice, electricityPrice, waterPrice, wasteFees } -> { ...same, total }
+    async saveCalculation() {
+      if (!this.calcRoomId) return
+      this.savingBill = true
+
+      const body = {
+        roomPrice: this.calcForm.roomPrice,
+        electricityPrice: this.calcForm.electricityPrice,
+        waterPrice: this.calcForm.waterPrice,
+        wasteFees: this.calcForm.wasteFees,
       }
-      this.calcDialog = false
-      this.calcIndex = -1
+
+      try {
+        const response = this.$axios.$post
+          ? await this.$axios.$post(`${API_BASE}/rooms/${this.calcRoomId}/bill`, body)
+          : await (
+              await fetch(`${FETCH_API_BASE}/rooms/${this.calcRoomId}/bill`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+              })
+            ).json()
+          const bill = response.data || response
+
+        // Use the server-computed total rather than recalculating client-side
+        const row = this.reports.find((r) => r.roomId === this.calcRoomId)
+        if (row) {
+          Object.assign(row, body, { total: bill.total })
+        }
+      } catch (err) {
+        console.error('Failed to save bill', err)
+      } finally {
+        this.savingBill = false
+        this.calcDialog = false
+        this.calcRoomId = null
+      }
     },
 
     printBill() {
@@ -341,13 +519,13 @@ export default {
 .calc-title {
   font-size: 18px;
   font-weight: 700;
-  color: #064D8D;
+  color: #111827;
 }
 
 .calc-room {
   margin: 2px 0 0;
   font-size: 14px;
-  color: #064D8D;
+  color: #1976d2;
   font-weight: 600;
 }
 

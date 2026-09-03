@@ -24,11 +24,11 @@
 
         <v-container class="pa-0">
           <v-row dense>
-            <!-- 1. Full Name (Full Width) -->
+            <!-- 1. Name -->
             <v-col cols="12">
               <div class="field-label">ຊື່ ແລະ ນາມສະກຸນ</div>
               <v-text-field
-                v-model="form.customerName"
+                v-model="form.name"
                 dense
                 outlined
                 hide-details
@@ -42,7 +42,7 @@
             <v-col cols="12" sm="6" class="mt-2 pr-sm-2">
               <div class="field-label">ເບີໂທລະສັບ</div>
               <v-text-field
-                v-model="form.phoneNumber"
+                v-model="form.phone"
                 dense
                 outlined
                 hide-details
@@ -66,11 +66,11 @@
               ></v-select>
             </v-col>
 
-            <!-- 3. Interested Room (Full Width) -->
+            <!-- 3. Room Interest -->
             <v-col cols="12" class="mt-2">
               <div class="field-label">ຫ້ອງທີ່ສົນໃຈ</div>
               <v-text-field
-                v-model="form.roomInterested"
+                v-model="form.room_interest"
                 dense
                 outlined
                 hide-details
@@ -79,56 +79,15 @@
               ></v-text-field>
             </v-col>
 
-            <!-- 4. Contact Record Section -->
-            <v-col cols="12" class="mt-2">
-              <div class="field-label">ບັນທຶກການຕິດຕໍ່</div>
-              
-              <!-- History List Tag Display -->
-              <div v-if="form.contactLogs.length" class="contact-logs-container mb-2 pa-2 rounded grey lighten-4">
-                <div v-for="(log, index) in form.contactLogs" :key="index" class="text-caption mb-1">
-                  <span class="text-caption grey--text text--darken-1">{{ log.date }}</span>
-                  <div class="black--text">{{ log.note }}</div>
-                </div>
-              </div>
-
-              <!-- Input + Add Button Group -->
-              <v-row dense class="align-center">
-                <v-col cols="8" sm="9">
-                  <v-text-field
-                    v-model="newContactNote"
-                    dense
-                    outlined
-                    hide-details
-                    placeholder="ພິມບັນທຶກການຕິດຕໍ່..."
-                    class="custom-input"
-                    @keyup.enter="addContactNote"
-                  ></v-text-field>
-                </v-col>
-                <v-col cols="4" sm="3" class="pl-2">
-                  <v-btn
-                    block
-                    color="#064D8D"
-                    dark
-                    depressed
-                    class="rounded-md text-none"
-                    @click="addContactNote"
-                  >
-                    ບັນທຶກ
-                  </v-btn>
-                </v-col>
-              </v-row>
-            </v-col>
-
-            <!-- 5. First Contact & Next Appointment Dates -->
+            <!-- 4. First Contact & Next Appointment Dates -->
             <v-col cols="12" sm="6" class="mt-2 pr-sm-2">
               <div class="field-label">ຕິດຕໍ່ຄັ້ງທຳອິດ</div>
               <v-text-field
-                v-model="form.firstContactDate"
+                v-model="form.first_contact"
                 dense
                 outlined
                 hide-details
                 type="date"
-                placeholder="DD/MM/YYYY"
                 class="custom-input"
               ></v-text-field>
             </v-col>
@@ -136,21 +95,20 @@
             <v-col cols="12" sm="6" class="mt-2 pl-sm-2">
               <div class="field-label">ນັດໝາຍຄັ້ງຕໍ່ໄປ</div>
               <v-text-field
-                v-model="form.nextAppointmentDate"
+                v-model="form.next_appointment"
                 dense
                 outlined
                 hide-details
                 type="date"
-                placeholder="DD/MM/YYYY"
                 class="custom-input"
               ></v-text-field>
             </v-col>
 
-            <!-- 6. Responsible Person (Full Width) -->
+            <!-- 5. Assigned To -->
             <v-col cols="12" class="mt-2">
               <div class="field-label">ຜູ້ຮັບຜິດຊອບ</div>
               <v-text-field
-                v-model="form.responsible"
+                v-model="form.assigned_to"
                 dense
                 outlined
                 hide-details
@@ -160,12 +118,14 @@
               ></v-text-field>
             </v-col>
 
-            <!-- 7. Current Status Select (Full Width) -->
+            <!-- 6. Status -->
             <v-col cols="12" class="mt-2">
               <div class="field-label">ສະຖານະປັດຈຸບັນ</div>
               <v-select
                 v-model="form.status"
                 :items="statusOptions"
+                item-text="text"
+                item-value="value"
                 dense
                 outlined
                 hide-details
@@ -199,45 +159,40 @@ export default {
   data() {
     return {
       show: false,
-      newContactNote: '',
       channelOptions: ['Website', 'Facebook', 'WhatsApp', 'Call', 'Walk-in'],
-      statusOptions: ['ກຳລັງຕິດຕໍ່', 'ໃໝ່', 'ປິດການຂາຍແລ້ວ'],
+      statusOptions: [
+        { text: 'ກຳລັງຕິດຕໍ່', value: 0 },
+        { text: 'ໃໝ່', value: 1 },
+        { text: 'ປິດການຂາຍແລ້ວ', value: 2 },
+      ],
       form: this.emptyForm(),
     }
   },
   methods: {
     emptyForm() {
       return {
-        customerName: '',
-        phoneNumber: '',
+        name: '',
+        phone: '',
         channel: 'Website',
-        roomInterested: '',
-        contactLogs: [],
-        firstContactDate: '',
-        nextAppointmentDate: '',
-        responsible: '',
-        status: 'ກຳລັງຕິດຕໍ່',
+        room_interest: '',
+        first_contact: null,
+        next_appointment: null,
+        assigned_to: '',
+        status: 0,
       }
-    },
-    addContactNote() {
-      if (!this.newContactNote.trim()) return
-      const now = new Date()
-      const formattedDate = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()} ເວລາ ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'PM' : 'AM'}`
-      
-      this.form.contactLogs.push({
-        date: formattedDate,
-        note: this.newContactNote,
-      })
-      this.newContactNote = ''
     },
     close() {
       this.show = false
       this.$nextTick(() => {
         this.form = this.emptyForm()
-        this.newContactNote = ''
       })
     },
     save() {
+      if (!this.form.name || !this.form.name.trim()) {
+        alert('ກະລຸນາປ້ອນຊື່ລູກຄ້າ')
+        return
+      }
+
       this.$emit('created', { ...this.form })
       this.close()
     },
@@ -254,11 +209,5 @@ export default {
 
 .primary-text {
   color: #064d8d;
-}
-
-.contact-logs-container {
-  max-height: 100px;
-  overflow-y: auto;
-  border: 1px solid #e0e0e0;
 }
 </style>

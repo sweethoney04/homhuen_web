@@ -303,18 +303,39 @@ export default {
       })
     },
     save() {
-      if (!this.form.roomName.trim() || !this.form.firstName.trim()) {
+      const roomName = this.form.roomName ? this.form.roomName.trim() : ''
+      const firstName = this.form.firstName ? this.form.firstName.trim() : ''
+      const lastName = this.form.lastName ? this.form.lastName.trim() : ''
+
+      if (!roomName || !firstName) {
         return
       }
 
-      this.$emit('created', {
-        room: this.form.roomName.trim(),
-        lessee: `${this.form.firstName.trim()} ${this.form.lastName.trim()}`.trim(),
-        leaseContract: `LC-${Date.now()}`,
-        payment: Number(this.form.pricePerMonth.replace(/,/g, '')) || 0,
+      const roomPrice = Number(String(this.form.pricePerMonth || '').replace(/,/g, '')) || 0
+      const record = {
+        id: Date.now(),
+        roomId: Date.now(),
+        name: roomName,
+        room: roomName,
+        lessee: `${firstName} ${lastName}`.trim(),
+        leaseTime: [this.form.dateStart, this.form.dateEnd].filter(Boolean).join(' - ') || '—',
+        overdue: 0,
+        status: 0,
+        roomPrice,
+        waterPrice: 0,
+        electricityPrice: 0,
+        wasteFees: 0,
+        total: roomPrice,
+        payment: roomPrice,
         details: this.form.note || `${this.form.dateStart} - ${this.form.dateEnd}`,
+        leaseContract: `LC-${Date.now()}`,
+        firstName,
+        lastName,
+        phoneNumber: this.form.phoneNumber || '',
         ...this.form,
-      })
+      }
+
+      this.$emit('created', record)
       this.close()
     },
   },

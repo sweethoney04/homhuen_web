@@ -108,8 +108,8 @@ export default {
       })
     },
     save() {
-      if (!this.form.username.trim() || !this.form.password.trim()) {
-        alert('ກະລຸນາປ້ອນ Username ແລະ Password')
+      if (!this.form.phone.trim() || !this.form.password.trim()) {
+        alert('ກະລຸນາປ້ອນ Phone ແລະ Password')
         return
       }
 
