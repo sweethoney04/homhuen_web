@@ -144,9 +144,12 @@
             <span class="calc-line-label">{{ line.label }}</span>
             <div class="calc-line-input">
               <input
-                v-model.number="calcForm[line.key]"
-                type="number"
+                :value="formatNumber(calcForm[line.key])"
+                type="text"
                 min="0"
+                placeholder="0"
+                inputmode="numeric"
+                @input="updateCalcValue(line.key, $event.target.value)"
               />
               <span class="calc-unit">LAK</span>
             </div>
@@ -249,7 +252,17 @@ export default {
   },
   methods: {
     formatCurrency(value) {
-      return `${Number(value || 0).toLocaleString()} ₭`
+      return this.formatNumber(value)
+    },
+
+    formatNumber(value) {
+      if (value === '' || value == null) return ''
+      return Number(value || 0).toLocaleString()
+    },
+
+    updateCalcValue(key, value) {
+      const digits = value.replace(/[^\d]/g, '')
+      this.calcForm[key] = digits ? Number(digits) : ''
     },
 
     // GET /api/admin/report/unpaid -> { roomId, name, leaseTime, overdue, status }
@@ -426,10 +439,10 @@ export default {
       this.calcRoomId = item.roomId
       this.calcForm = {
         name: item.name,
-        roomPrice: item.roomPrice || 0,
-        waterPrice: item.waterPrice || 0,
-        electricityPrice: item.electricityPrice || 0,
-        wasteFees: item.wasteFees || 0,
+        roomPrice: item.roomPrice || '',
+        waterPrice: item.waterPrice || '',
+        electricityPrice: item.electricityPrice || '',
+        wasteFees: item.wasteFees || '',
       }
       this.calcDialog = true
     },
@@ -451,10 +464,10 @@ export default {
       this.savingBill = true
 
       const body = {
-        roomPrice: this.calcForm.roomPrice,
-        electricityPrice: this.calcForm.electricityPrice,
-        waterPrice: this.calcForm.waterPrice,
-        wasteFees: this.calcForm.wasteFees,
+        roomPrice: Number(this.calcForm.roomPrice) || 0,
+        electricityPrice: Number(this.calcForm.electricityPrice) || 0,
+        waterPrice: Number(this.calcForm.waterPrice) || 0,
+        wasteFees: Number(this.calcForm.wasteFees) || 0,
       }
 
       try {

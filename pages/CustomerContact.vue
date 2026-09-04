@@ -73,10 +73,7 @@
 </template>
 
 <script>
-import axios from "axios"; // or: import { axiosInstance } from '@/plugins/axios'
-
-// Adjust to match how the rest of the app talks to the API.
-const API_BASE = process.env.VUE_APP_API_BASE_URL || "http://localhost:3000/api";
+const API_PATH = "/admin/contact-messages";
 
 export default {
   data: () => ({
@@ -104,19 +101,11 @@ export default {
   },
 
   methods: {
-    authHeaders() {
-      // Adjust to however the app stores the auth token (Vuex, localStorage, etc.)
-      const token = localStorage.getItem("token");
-      return token ? { Authorization: `Bearer ${token}` } : {};
-    },
-
     async initialize() {
       this.loading = true;
       try {
-        const { data } = await axios.get(`${API_BASE}/admin/contact-messages`, {
-          headers: this.authHeaders(),
-        });
-        this.contacts = data.data;
+        const response = await this.$axios.$get(API_PATH);
+        this.contacts = response.data || [];
       } catch (err) {
         this.notify("ໂຫລດຂໍ້ມູນບໍ່ສຳເລັດ", "error");
         console.error(err);
@@ -140,10 +129,7 @@ export default {
     async deleteItemConfirm() {
       this.deleting = true;
       try {
-        await axios.delete(
-          `${API_BASE}/admin/contact-messages/${this.editedItem.id}`,
-          { headers: this.authHeaders() }
-        );
+        await this.$axios.$delete(`${API_PATH}/${this.editedItem.id}`);
         this.contacts.splice(this.editedIndex, 1);
         this.notify("ລົບຂໍ້ມູນສຳເລັດ", "success");
       } catch (err) {
