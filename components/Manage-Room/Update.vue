@@ -130,6 +130,21 @@
               ></v-select>
             </v-col>
 
+            <v-col cols="12" sm="4">
+              <div class="label-text">ຂະໜາດ</div>
+              <v-text-field v-model="form.size" dense outlined hide-details placeholder="ຂະໜາດຫ້ອງ"></v-text-field>
+            </v-col>
+
+            <v-col cols="12" sm="4">
+              <div class="label-text">ຈຳນວນຫ້ອງນອນ</div>
+              <v-text-field v-model="form.bedrooms" type="number" min="0" dense outlined hide-details placeholder="0"></v-text-field>
+            </v-col>
+
+            <v-col cols="12" sm="4">
+              <div class="label-text">ຈຳນວນຫ້ອງນ້ຳ</div>
+              <v-text-field v-model="form.bathrooms" type="number" min="0" dense outlined hide-details placeholder="0"></v-text-field>
+            </v-col>
+
             <!-- ລາຍລະອຽດ (Description) -->
             <v-col cols="12">
               <div class="label-text">ລາຍລະອຽດ</div>
@@ -316,6 +331,9 @@ export default {
         pricePerMonth: item.price ?? item.pricePerMonth ?? '',
         availability: isAvailable ? 'available' : 'unavailable',
         type: isLarge ? 'large' : 'small',
+        size: item.size ?? '',
+        bedrooms: item.bedrooms ?? '',
+        bathrooms: item.bathrooms ?? '',
         description: item.descriptions ?? item.description ?? '',
         image: toAbsoluteUrl(item.cover ?? item.image ?? item.imageRoom ?? ''),
         imageFile: null,
@@ -385,6 +403,9 @@ export default {
         formData.append('price', String(this.form.pricePerMonth || '0').replace(/,/g, ''))
         formData.append('descriptions', this.form.description || '')
         formData.append('roomType', this.form.type === 'large' ? '1' : '0')
+        formData.append('size', this.form.size || '')
+        formData.append('bedrooms', this.form.bedrooms || '0')
+        formData.append('bathrooms', this.form.bathrooms || '0')
         formData.append(
           'available',
           this.form.availability === 'available' ? 'true' : 'false'

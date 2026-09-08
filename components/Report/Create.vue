@@ -1,11 +1,5 @@
 <template>
   <v-dialog v-model="show" max-width="700px" persistent>
-    <template v-slot:activator="{ on, attrs }">
-      <v-btn color="#064D8D" dark v-bind="attrs" v-on="on">
-        ເພີ່ມສັນຍານໃໝ່
-      </v-btn>
-    </template>
-
      <v-card class="rounded-lg overflow-hidden pb-4">
   <!-- Header Bar -->
   <v-card-title class="d-flex justify-space-between align-center px-6 pt-4 pb-2">

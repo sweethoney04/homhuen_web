@@ -134,6 +134,21 @@
               ></v-select>
             </v-col>
 
+            <v-col cols="12" sm="4">
+              <div class="label-text">ຂະໜາດ</div>
+              <v-text-field v-model="form.size" dense outlined hide-details placeholder="ຂະໜາດຫ້ອງ"></v-text-field>
+            </v-col>
+
+            <v-col cols="12" sm="4">
+              <div class="label-text">ຈຳນວນຫ້ອງນອນ</div>
+              <v-text-field v-model="form.bedrooms" type="number" min="0" dense outlined hide-details placeholder="0"></v-text-field>
+            </v-col>
+
+            <v-col cols="12" sm="4">
+              <div class="label-text">ຈຳນວນຫ້ອງນ້ຳ</div>
+              <v-text-field v-model="form.bathrooms" type="number" min="0" dense outlined hide-details placeholder="0"></v-text-field>
+            </v-col>
+
             <v-col cols="12">
               <div class="label-text">ລາຍລະອຽດ</div>
               <v-textarea
@@ -270,6 +285,9 @@ export default {
         pricePerMonth: "",
         availability: "available",
         type: "",
+        size: "",
+        bedrooms: "",
+        bathrooms: "",
         description: "",
         image: "",
         imageFile: null,
@@ -333,6 +351,9 @@ export default {
         formData.append("descriptions", description);
         // Backend expects roomType as 0 (small) or 1 (large), not a string.
         formData.append("roomType", this.form.type === "large" ? "1" : "0");
+        formData.append("size", this.form.size || "");
+        formData.append("bedrooms", this.form.bedrooms || "0");
+        formData.append("bathrooms", this.form.bathrooms || "0");
         // Availability maps to the `available` field, kept separate from
         // the backend's billing `status` field.
         formData.append(

@@ -145,7 +145,7 @@ export default {
       items: [
         { icon: 'mdi-view-dashboard', title: 'Dashboard', to: '/' },
         { icon: 'mdi-account-multiple', title: 'ຈັດການພະນັກງານ', to: '/ManageUsers' },
-        { icon: 'mdi-account-circle', title: 'ຈັດການລູກຄ້າ', to: '/ManageCustomer' },
+        // { icon: 'mdi-account-circle', title: 'ຈັດການລູກຄ້າ', to: '/ManageCustomer' },
         { icon: 'mdi-file-document', title: 'ລາຍງານຫ້ອງ', to: '/report/reportSell' },
         {
           icon: 'mdi-web',
