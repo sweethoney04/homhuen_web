@@ -495,6 +495,10 @@ export default {
   font-size: 13px;
   color: #616161;
   margin-bottom: 4px;
+  white-space: nowrap; 
+  width: 170px; 
+  overflow: hidden;
+  text-overflow: ellipsis; 
 }
 .add-btn {
   min-width: 90px;

@@ -33,7 +33,7 @@
           {{ reports.indexOf(item) + 1 }}
         </template>
 
-        <!-- backend only gives status 0/1, tenant name comes from a separate call -->
+        <!-- lessee now comes straight from GET /api/admin/report -->
         <template v-slot:item.lessee="{ item }">
           {{ item.lessee || '-' }}
         </template>
@@ -207,7 +207,8 @@ export default {
         { text: 'ຈັດການ', value: 'manage', sortable: false, align: 'center', width: '80' },
         { text: 'ຄິດໄລ່', value: 'calculate', sortable: false, align: 'center', width: '90' },
       ],
-      // Populated from GET /api/admin/report/unpaid, one row per room:
+      // Populated from GET /api/admin/report, one row per room, tenant name
+      // (lessee) included directly by the backend:
       // { roomId, name, leaseTime, overdue, status, lessee }
       reports: [],
 
@@ -265,34 +266,51 @@ export default {
       this.calcForm[key] = digits ? Number(digits) : ''
     },
 
-    // GET /api/admin/report/unpaid -> { roomId, name, leaseTime, overdue, status }
-    // Tenant name isn't included in this endpoint, so we enrich each row
-    // with a follow-up call to /rooms/:id/info.
+    // GET /api/admin/report -> { roomId, name, leaseTime, overdue, status }
+    // report/ stays exactly as before - it does not carry the lessee name.
+    async fetchReportList() {
+      const res = this.$axios.$get
+        ? await this.$axios.$get(`${API_BASE}/`)
+        : await (await fetch(`${FETCH_API_BASE}/`)).json()
+      return res.data || []
+    },
+
+    // GET /api/admin/report/rooms/info -> array of full room info (tenant,
+    // lease, price detail), one entry per room, in a SINGLE request.
+    // This replaces calling /rooms/:id/info once per room in a loop (which
+    // is what showed up as ~15 duplicate "info" requests in the Network tab)
+    // with one "info" request that already contains all 15 rows.
+    async fetchAllRoomInfo() {
+      const res = this.$axios.$get
+        ? await this.$axios.$get(`${API_BASE}/rooms/info`)
+        : await (await fetch(`${FETCH_API_BASE}/rooms/info`)).json()
+      return res.data || []
+    },
+
+    // report/ and rooms/info run in parallel (2 requests total), then are
+    // merged client-side so the table gets both the report fields and the
+    // tenant name (lessee) without a per-row round trip.
     async fetchReports() {
       this.loading = true
       try {
-        const { data } = await this.$axios.$get
-          ? { data: await this.$axios.$get(`${API_BASE}/unpaid`) }
-          : { data: await (await fetch(`${FETCH_API_BASE}/unpaid`)).json() }
+        const [rows, infoList] = await Promise.all([
+          this.fetchReportList(),
+          this.fetchAllRoomInfo(),
+        ])
 
-        const rows = data.data || []
+        const infoMap = {}
+        infoList.forEach((info) => {
+          infoMap[info.roomId] = info
+        })
 
-        const enriched = await Promise.all(
-          rows.map(async (row) => {
-            let lessee = ''
-            try {
-              const info = await this.fetchRoomInfo(row.roomId)
-              if (info && info.tenant) {
-                lessee = `${info.tenant.name || ''} ${info.tenant.lastname || ''}`.trim()
-              }
-            } catch (e) {
-              // no tenant assigned yet, or info lookup failed - leave blank
-            }
-            return { ...row, lessee }
-          })
-        )
-
-        this.reports = enriched
+        this.reports = rows.map((row) => {
+          const info = infoMap[row.roomId]
+          const tenant = info && info.tenant
+          const lessee = tenant
+            ? `${tenant.name || ''} ${tenant.lastname || ''}`.trim()
+            : ''
+          return { ...row, lessee }
+        })
       } catch (err) {
         console.error('Failed to load report list', err)
       } finally {
@@ -300,6 +318,8 @@ export default {
       }
     },
 
+    // Still used on-demand for a single room (view detail / edit dialogs),
+    // not called in a loop.
     async fetchRoomInfo(roomId) {
       const res = this.$axios.$get
         ? await this.$axios.$get(`${API_BASE}/rooms/${roomId}/info`)
@@ -330,32 +350,7 @@ export default {
       }
     },
 
-    handleCreated(payload = {}) {
-      // const normalized = {
-      //   roomId: payload.roomId || payload.id || Date.now(),
-      //   name: payload.name || payload.room || payload.roomName || 'Unknown room',
-      //   lessee: payload.lessee || [payload.firstName, payload.lastName].filter(Boolean).join(' ') || '-',
-      //   leaseTime: payload.leaseTime || [payload.dateStart, payload.dateEnd].filter(Boolean).join(' - ') || '—',
-      //   overdue: Number(payload.overdue || 0),
-      //   status: Number(payload.status ?? 0),
-      //   roomPrice: Number(payload.roomPrice ?? payload.payment ?? 0),
-      //   waterPrice: Number(payload.waterPrice || 0),
-      //   electricityPrice: Number(payload.electricityPrice || 0),
-      //   wasteFees: Number(payload.wasteFees || 0),
-      //   total: Number(payload.total ?? payload.roomPrice ?? payload.payment ?? 0),
-      //   ...payload,
-      // }
-
-      // const exists = this.reports.some(
-      //   (row) =>
-      //     row.roomId === normalized.roomId ||
-      //     (row.name === normalized.name && row.lessee === normalized.lessee)
-      // )
-
-      // if (!exists) {
-      //   this.reports = [normalized, ...this.reports]
-      // }
-
+    handleCreated() {
       this.fetchReports()
     },
 
