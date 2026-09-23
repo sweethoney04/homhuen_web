@@ -11,8 +11,7 @@
         class="white--text d-flex justify-space-between align-center"
         style="background-color: #064d8d"
       >
-        <span class="text-h6">
-          <div>ເພີ່ມ / ແກ້ໄຂ ຫ້ອງແຖວ</div></span>
+        <span class="text-h6"> <div>ເພີ່ມ / ແກ້ໄຂ ຫ້ອງແຖວ</div></span>
         <v-btn icon dark @click="close">
           <v-icon>mdi-close</v-icon>
         </v-btn>
@@ -79,7 +78,8 @@
           <v-row class="mt-2">
             <v-col cols="12">
               <div class="text-subtitle-1 font-weight-bold">
-                <div>ຂໍ້ມູນຫ້ອງ</div></div>
+                <div>ຂໍ້ມູນຫ້ອງ</div>
+              </div>
             </v-col>
 
             <v-col cols="12" sm="6">
@@ -136,21 +136,43 @@
 
             <v-col cols="12" sm="4">
               <div class="label-text">ຂະໜາດ</div>
-              <v-text-field v-model="form.size" dense outlined hide-details placeholder="ຂະໜາດຫ້ອງ"></v-text-field>
+              <v-text-field
+                v-model="form.size"
+                dense
+                outlined
+                hide-details
+                placeholder="ຂະໜາດຫ້ອງ"
+              ></v-text-field>
             </v-col>
 
             <v-col cols="12" sm="4">
               <div class="label-text">ຈຳນວນຫ້ອງນອນ</div>
-              <v-text-field v-model="form.bedrooms" type="number" min="0" dense outlined hide-details placeholder="0"></v-text-field>
+              <v-text-field
+                v-model="form.bedrooms"
+                type="number"
+                min="0"
+                dense
+                outlined
+                hide-details
+                placeholder="0"
+              ></v-text-field>
             </v-col>
 
             <v-col cols="12" sm="4">
               <div class="label-text">ຈຳນວນຫ້ອງນ້ຳ</div>
-              <v-text-field v-model="form.bathrooms" type="number" min="0" dense outlined hide-details placeholder="0"></v-text-field>
+              <v-text-field
+                v-model="form.bathrooms"
+                type="number"
+                min="0"
+                dense
+                outlined
+                hide-details
+                placeholder="0"
+              ></v-text-field>
             </v-col>
 
             <v-col cols="12">
-              <div class="label-text">ລາຍລະອຽດ</div>
+              <div class="label-text-description">ລາຍລະອຽດ</div>
               <v-textarea
                 v-model="form.description"
                 outlined
@@ -276,8 +298,8 @@ export default {
   },
   methods: {
     formatPrice(value) {
-      const digits = String(value || '').replace(/\D/g, '')
-      this.form.pricePerMonth = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+      const digits = String(value || "").replace(/\D/g, "");
+      this.form.pricePerMonth = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     },
     emptyForm() {
       return {
@@ -401,8 +423,8 @@ export default {
           error.response?.status === 401
             ? "Session expired. Please log in again."
             : error.response?.data?.message ||
-              error.message ||
-              "ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກຂໍ້ມູນ"
+                error.message ||
+                "ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກຂໍ້ມູນ"
         );
       } finally {
         this.loading = false;
@@ -440,6 +462,16 @@ export default {
   font-size: 13px;
   color: #616161;
   margin-bottom: 4px;
+
+  .label-text-description {
+    font-size: 13px;
+    color: #616161;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 .add-btn {
   min-width: 90px;

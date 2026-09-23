@@ -51,7 +51,7 @@
     </template>
 
     <template v-slot:item.description="{ item }">
-      {{ formatDescription(item) }}
+      <span class="description-text">{{ formatDescription(item) }}</span>
     </template>
 
     <template v-slot:item.edit="{ item }">
@@ -152,5 +152,14 @@ export default {
 .customer-table >>> thead tr th {
   background-color: #064d8d !important;
   color: #ffffff !important;
+}
+
+.description-text {
+  display: inline-block;
+  white-space: nowrap;
+  width: 50px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
 }
 </style>
